@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>MIKLIHIT MISHTIFIT 2</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #020617; color: #f8fafc; font-family: Arial, Helvetica, sans-serif; overflow: hidden; touch-action: none; user-select: none; }
+    button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; border: 0; }
+    .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: radial-gradient(circle at 50% 25%, #164e63, #020617 60%); }
+    .hidden { display: none !important; }
+    .menu { position: relative; width: min(1120px, 100%); padding: 38px; border-radius: 36px; border: 1px solid rgba(125,211,252,.25); background: linear-gradient(135deg, rgba(15,23,42,.96), rgba(22,78,99,.92), rgba(131,24,67,.9)); box-shadow: 0 30px 80px rgba(0,0,0,.55); overflow: hidden; }
+    .menu:before { content: ""; position: absolute; inset: 0; opacity: .18; background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px); background-size: 48px 48px; }
+    .menu-inner { position: relative; z-index: 1; display: grid; grid-template-columns: 1.25fr .75fr; gap: 28px; align-items: center; }
+    h1 { margin: 0; font-size: clamp(44px, 8vw, 82px); line-height: .9; letter-spacing: -3px; }
+    .game-two { display: inline-block; color: #ef4444; font-size: 1.28em; text-shadow: 0 0 18px rgba(239,68,68,.8), 0 0 36px rgba(249,115,22,.65); transform: rotate(-8deg); animation: twoPop .75s infinite alternate ease-in-out; }
+    @keyframes twoPop { from { transform: rotate(-8deg) scale(1); } to { transform: rotate(7deg) scale(1.14); } }
+    .character-select { position: relative; z-index: 1; width: min(980px, 100%); padding: 30px; border-radius: 34px; border: 1px solid rgba(125,211,252,.25); background: linear-gradient(135deg, rgba(15,23,42,.96), rgba(22,78,99,.92), rgba(88,28,135,.88)); box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+    .character-title { margin: 0; font-size: clamp(34px, 6vw, 58px); letter-spacing: -1px; }
+    .character-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+    .char-card { min-height: 220px; border-radius: 24px; border: 1px solid rgba(255,255,255,.14); background: rgba(2,6,23,.48); color: white; padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 18px 44px rgba(0,0,0,.3); overflow: hidden; }
+    .char-card:not(.locked):hover { background: rgba(236,72,153,.2); transform: translateY(-2px); }
+    .char-avatar { width: 110px; height: 138px; border-radius: 24px; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg,#38bdf8,#1e3a8a); border: 1px solid rgba(255,255,255,.2); position: relative; }
+    .char-face { width: 48px; height: 48px; border-radius: 50%; background: #fde68a; position: absolute; top: 22px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.08); }
+    .char-face:before, .char-face:after { content: ""; position: absolute; top: 19px; width: 5px; height: 5px; border-radius: 50%; background: #111827; }
+    .char-face:before { left: 14px; } .char-face:after { right: 14px; }
+    .char-body { width: 58px; height: 58px; border-radius: 22px 22px 14px 14px; background: #38bdf8; position: absolute; bottom: 16px; }
+    .char-lock-silhouette { width: 76px; height: 114px; border-radius: 36px 36px 18px 18px; background: #000; box-shadow: 0 0 18px rgba(0,0,0,.9); position: relative; }
+    .char-lock-silhouette:before { content: ""; position: absolute; left: 17px; top: 5px; width: 42px; height: 42px; border-radius: 50%; background: #000; }
+    .char-lock-silhouette.cap:after { content: ""; position: absolute; left: 12px; top: 0; width: 56px; height: 14px; border-radius: 999px; background: #000; }
+    .char-lock-silhouette.hair:after { content: ""; position: absolute; left: 14px; top: -3px; width: 48px; height: 24px; border-radius: 50% 50% 12px 12px; background: #000; }
+    .char-card.locked { opacity: 1; filter: none; cursor: not-allowed; background: radial-gradient(circle at 50% 20%, rgba(255,255,255,.08), rgba(2,6,23,.85)); }
+    .char-card.locked .char-avatar { background: linear-gradient(180deg,#111827,#000); border-color: rgba(255,255,255,.08); }
+    .char-name { font-weight: 900; font-size: 17px; }
+    .char-note { color: #cbd5e1; font-size: 12px; text-align: center; line-height: 1.35; }
+    .character-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .cheats-box, .multiplayer-box { width: min(680px, 100%); border-radius: 34px; padding: 34px; background: linear-gradient(135deg, rgba(2,6,23,.96), rgba(88,28,135,.9)); border: 1px solid rgba(255,255,255,.15); box-shadow: 0 30px 80px rgba(0,0,0,.55); text-align: center; }
+    .multiplayer-box p { color: #dbeafe; line-height: 1.45; margin: 10px 0; }
+    .multiplayer-big-status { margin: 18px auto; width: fit-content; padding: 12px 18px; border-radius: 18px; background: rgba(2,6,23,.72); border: 1px solid rgba(255,255,255,.16); font-size: 18px; font-weight: 900; }
+    .multiplayer-big-status.connected { color: #86efac; border-color: rgba(34,197,94,.45); }
+    .multiplayer-big-status.connecting { color: #fde68a; border-color: rgba(250,204,21,.45); }
+    .multiplayer-big-status.offline { color: #fca5a5; border-color: rgba(248,113,113,.45); }
+    .multiplayer-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+    .cheats-text { font-size: clamp(44px, 9vw, 86px); font-weight: 900; color: #fef3c7; text-shadow: 0 0 24px rgba(250,204,21,.8); margin: 22px 0; direction: rtl; }
+    .subtitle { margin: 16px 0 0; color: #cffafe; font-size: 18px; line-height: 1.5; max-width: 690px; }
+    .spooky-subtitle { margin: 14px 0 0; font-size: clamp(22px, 3.5vw, 38px); font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #39ff14; font-family: Impact, "Arial Black", Arial, sans-serif; text-shadow: 0 0 4px #0f0, 0 0 10px rgba(57,255,20,.9), 2px 2px 0 #14532d, 4px 4px 0 #052e16; transform: skewX(-6deg) rotate(-1deg); display: inline-block; animation: spookyFlicker 1.2s infinite alternate ease-in-out; }
+    .spooky-subtitle::after { content: ""; display: block; width: 100%; height: 8px; margin-top: -3px; background: radial-gradient(circle, rgba(57,255,20,.8) 0 18%, transparent 20% 100%); background-size: 18px 8px; filter: blur(.2px); opacity: .8; }
+    @keyframes spookyFlicker { 0% { filter: brightness(1); transform: skewX(-6deg) rotate(-1deg) scale(1); } 50% { filter: brightness(1.35); transform: skewX(-4deg) rotate(1deg) scale(1.03); } 100% { filter: brightness(.92); transform: skewX(-7deg) rotate(-1deg) scale(.99); } }
+    .icons { font-size: 58px; margin-bottom: 14px; }
+    .panel { border-radius: 26px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.28); padding: 24px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.22); }
+    .panel p { margin: 10px 0; color: #e2e8f0; font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+    .btn { padding: 15px 24px; border-radius: 18px; color: white; font-weight: 900; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.15); box-shadow: 0 12px 26px rgba(0,0,0,.25); transition: .15s ease; }
+    .btn.primary { background: #ec4899; }
+    .btn:hover, .small:hover, .touch:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn:active, .small:active, .touch:active { transform: scale(.97); }
+    #gameScreen { align-items: flex-start; padding: 0; background: radial-gradient(circle at 50% 10%, rgba(14,116,144,.35), transparent 42%), linear-gradient(135deg, #020617, #0f172a 45%, #111827); }
+    .topbar { position: fixed; left: 0; top: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; z-index: 8; background: rgba(2,6,23,.82); border-bottom: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(8px); }
+    .brand { font-weight: 900; letter-spacing: -.5px; font-size: 20px; }
+    .top-actions { display: flex; gap: 6px; }
+    .multiplayer-status { position: fixed; left: 12px; top: 66px; z-index: 20; padding: 7px 11px; border-radius: 14px; background: rgba(2,6,23,.74); border: 1px solid rgba(255,255,255,.16); color: #cbd5e1; font-size: 12px; font-weight: 900; backdrop-filter: blur(8px); pointer-events: none; }
+    .multiplayer-status.connected { color: #86efac; border-color: rgba(34,197,94,.45); }
+    .multiplayer-status.connecting { color: #fde68a; border-color: rgba(250,204,21,.45); }
+    .multiplayer-status.offline { color: #fca5a5; border-color: rgba(248,113,113,.45); }
+    .small { padding: 9px 11px; border-radius: 13px; background: rgba(255,255,255,.1); color: white; font-weight: 800; border: 1px solid rgba(255,255,255,.14); transition: .15s ease; }
+    #wrap { position: fixed; left: 0; right: 0; top: 54px; bottom: 148px; display: flex; align-items: stretch; justify-content: stretch; padding: 4px; }
+    .desktop-frame { width: 100%; height: 100%; display: flex; align-items: stretch; justify-content: stretch; }
+    .canvas-card { width: 100%; height: 100%; }
+    .desktop-panel { display: none; }
+    canvas { display: block; width: 100%; height: 100%; max-width: 100vw; max-height: 100%; border-radius: 18px; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 40px rgba(0,0,0,.42), 0 20px 50px rgba(0,0,0,.45); background: #123; touch-action: none; object-fit: fill; }
+    .desktop-card { border-radius: 24px; border: 1px solid rgba(255,255,255,.12); background: rgba(15,23,42,.72); box-shadow: 0 18px 45px rgba(0,0,0,.32); padding: 18px; backdrop-filter: blur(10px); }
+    .desktop-card p { margin: 8px 0; color: #dbeafe; font-size: 13px; line-height: 1.35; }
+    .title-card { display: flex; align-items: center; gap: 14px; }
+    .big-icon { width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: rgba(236,72,153,.18); border: 1px solid rgba(249,168,212,.25); font-size: 28px; }
+    .label { color: #67e8f9; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .panel-title { font-size: 18px; font-weight: 900; }
+    .mobile-controls { position: fixed; left: 0; right: 0; bottom: 0; height: 148px; padding: 8px 10px 12px; display: grid; grid-template-columns: 170px 1fr; gap: 10px; background: linear-gradient(180deg, rgba(2,6,23,.1), rgba(2,6,23,.96) 28%); z-index: 9; }
+    .dpad { width: 160px; display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 42px); gap: 5px; align-content: center; }
+    .touch { border-radius: 15px; color: white; background: rgba(15,23,42,.94); border: 1px solid rgba(255,255,255,.16); font-size: 20px; font-weight: 900; box-shadow: 0 8px 18px rgba(0,0,0,.28); transition: .15s ease; }
+    .touch.active { background: rgba(236,72,153,.72); transform: scale(.97); }
+    .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+    .mobile-actions { display: grid; grid-template-rows: 52px 1fr; gap: 7px; min-width: 0; }
+    .attack { background: #ec4899; font-size: 18px; }
+    .weapon-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .weapon { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 16px; line-height: 1; padding: 4px; min-width: 0; overflow: visible; }
+    .weapon span:last-child { font-size: 9px; text-align: center; white-space: normal; overflow: visible; line-height: 1.05; max-width: 100%; }
+    .weapon.selected { outline: 2px solid #f9a8d4; background: rgba(236,72,153,.45); }
+    @media (min-width: 900px) {
+      .screen { padding: 22px; }
+      .menu { padding: 44px; border-radius: 42px; }
+      .menu-inner { gap: 34px; }
+      .topbar { height: 62px; padding: 10px 22px; background: rgba(2,6,23,.72); }
+      .brand { font-size: 24px; }
+      #wrap { bottom: 0; top: 62px; padding: 24px; align-items: center; justify-content: center; }
+      .desktop-frame { max-width: 1280px; max-height: 760px; gap: 18px; align-items: stretch; justify-content: center; }
+      .canvas-card { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 16px; border-radius: 34px; border: 1px solid rgba(125,211,252,.18); background: linear-gradient(135deg, rgba(15,23,42,.82), rgba(8,47,73,.55)); box-shadow: 0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); }
+      canvas { width: auto; height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 920 / 590; object-fit: contain; border-radius: 24px; border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 0 40px rgba(0,0,0,.42), 0 24px 55px rgba(0,0,0,.48); }
+      .desktop-panel { width: 320px; display: flex; flex-direction: column; gap: 14px; }
+      .mobile-controls { width: 460px; left: auto; right: 24px; bottom: 24px; height: 166px; border-radius: 24px; border: 1px solid rgba(255,255,255,.12); background: rgba(2,6,23,.76); backdrop-filter: blur(8px); box-shadow: 0 18px 48px rgba(0,0,0,.35); }
+    }
+    @media (max-width: 720px) {
+      html, body { width: 100%; height: 100%; overflow: hidden; }
+      .screen { padding: 4px; }
+      .menu { padding: 20px; border-radius: 24px; }
+      .menu-inner { grid-template-columns: 1fr; }
+      .icons { font-size: 38px; }
+      .subtitle { font-size: 15px; }
+      .actions .btn { width: 100%; }
+      .brand { font-size: 14px; }
+      .topbar { height: 38px; padding: 4px 5px; }
+      .multiplayer-status { top: 83px; left: 6px; font-size: 10px; padding: 5px 8px; }
+      .top-actions { gap: 4px; }
+      .small { padding: 5px 5px; font-size: 10px; border-radius: 9px; }
+      #wrap { top: 82px; bottom: 98px; padding: 2px; align-items: center; justify-content: center; }
+      canvas { width: min(calc(100vw - 4px), calc((100dvh - 184px) * 920 / 590)); height: auto; aspect-ratio: 920 / 590; max-width: calc(100vw - 4px); max-height: calc(100dvh - 184px); object-fit: contain; border-radius: 10px; }
+      .mobile-controls { top: auto; bottom: 18px; height: 76px; grid-template-columns: 124px 1fr; padding: 4px 5px; gap: 6px; background: linear-gradient(180deg, rgba(2,6,23,.06), rgba(2,6,23,.9) 18%); }
+      .dpad { width: 120px; grid-template-columns: repeat(3, 37px); grid-template-rows: repeat(3, 23px); gap: 3px; align-content: center; }
+      .touch { border-radius: 10px; font-size: 14px; }
+      .mobile-actions { grid-template-rows: 1fr; gap: 4px; }
+      .attack { position: fixed; right: 6px; bottom: 22px; width: calc(100vw - 140px); height: 66px; font-size: 15px; }
+      .weapon-row { position: fixed; left: 4px; right: 4px; top: 39px; height: 40px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; z-index: 12; background: rgba(2,6,23,.78); border-radius: 12px; padding: 4px; backdrop-filter: blur(8px); }
+      .weapon { font-size: 12px; padding: 1px; min-height: 32px; }
+      .weapon span:first-child { font-size: 13px; line-height: 1; }
+      .weapon span:last-child { font-size: 6.5px; line-height: .95; white-space: normal; }
+      .character-select { padding: 16px; border-radius: 24px; max-height: 96dvh; overflow: auto; }
+      .character-grid { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+      .char-card { min-height: 116px; flex-direction: row; justify-content: flex-start; text-align: left; }
+      .char-avatar { width: 64px; height: 76px; font-size: 38px; flex: 0 0 auto; }
+      .character-actions .btn { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="menuScreen" class="screen">
+    <div class="menu">
+      <div class="menu-inner">
+        <div>
+          <div class="icons">🚿 🚽 🛁 🛒</div>
+          <h1>MIKLIHIT MISHTIFIT <span class="game-two">2</span></h1>
+          <p class="subtitle spooky-subtitle">RETURN TO THE CHASIDA</p>
+          <div class="actions">
+            <button id="startBtn" class="btn primary">Start Game</button>
+            <button id="soundBtnMenu" class="btn">Sound: On</button>
+            <button id="multiplayerBtnMenu" class="btn">Multiplayer</button>
+            <button id="cheatsBtnMenu" class="btn">Cheats</button>
+          </div>
+        </div>
+        <div class="panel">
+          <p><b>Move:</b> D-pad, WASD, or arrows</p>
+          <p><b>Attack:</b> ATTACK, Space, click, or tap</p>
+          <p><b>Weapons:</b> Pink Dildo, Bucket of Poop, Shocker, Freezer, Golden Shower</p>
+          <p><b>Powerups:</b> ז'ורנאל אישה, Bavaria Chocolate, and No-Fap Challenge</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="characterScreen" class="screen hidden">
+    <div class="character-select">
+      <h2 class="character-title">Select Character</h2>
+      <p class="subtitle" id="characterSubtitle">Choose your hero. More characters unlock after beating the main boss.</p>
+      <div class="character-grid">
+        <button class="char-card" data-char="current">
+          <div class="char-avatar"><div class="char-face"></div><div class="char-body"></div></div>
+        </button>
+        <button class="char-card locked" data-char="cap">
+          <div class="char-avatar"><div class="char-lock-silhouette cap"></div></div>
+        </button>
+        <button class="char-card locked" data-char="blackhair">
+          <div class="char-avatar"><div class="char-lock-silhouette hair"></div></div>
+        </button>
+      </div>
+      <div class="character-actions">
+        <button id="backToMenuBtn" class="btn">Back</button>
+        <button id="continueSameBtn" class="btn primary hidden">Continue Same Character</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameScreen" class="screen hidden">
+    <div class="topbar">
+      <div class="brand">MIKLIHIT MISHTIFIT <span class="game-two">2</span></div>
+      <div class="top-actions">
+        <button id="menuBtn" class="small">Menu</button>
+        <button id="soundBtnGame" class="small">Sound On</button>
+        <button id="restartBtn" class="small">Restart</button>
+        <button id="multiplayerBtnGame" class="small">Multiplayer</button>
+        <button id="cheatsBtnGame" class="small">Cheats</button>
+      </div>
+    </div>
+    <div id="multiplayerStatus" class="multiplayer-status offline">Multiplayer: Offline</div>
+    <div id="wrap">
+      <div class="desktop-frame">
+        <div class="canvas-card"><canvas id="game" width="920" height="590"></canvas></div>
+        <aside class="desktop-panel">
+          <div class="desktop-card title-card"><div class="big-icon">🚿</div><div><div class="label">Current run</div><div class="panel-title">Bathroom Campaign</div></div></div>
+          <div class="desktop-card"><div class="label">Run</div><p>Keep moving, collect powerups, and survive the bathroom chaos.</p><p>Multiplayer works when the WebSocket server is running.</p></div>
+          <div class="desktop-card"><div class="label">Powerups</div><p>📰 ז'ורנאל אישה = speed boost for 5s</p><p>🍫 Bavaria Chocolate = full HP</p><p>✋🚫 No-Fap Challenge = extreme power for 4s</p></div>
+          <div class="desktop-card"><div class="label">Desktop controls</div><p>WASD / arrows to move</p><p>Space or mouse click to attack</p><p>1, 2, 3, 4, 5 to switch weapons</p></div>
+        </aside>
+      </div>
+    </div>
+    <div class="mobile-controls">
+      <div class="dpad">
+        <button class="touch up" data-key="up">▲</button><button class="touch left" data-key="left">◀</button><button class="touch right" data-key="right">▶</button><button class="touch down" data-key="down">▼</button>
+      </div>
+      <div class="mobile-actions">
+        <button id="attackBtn" class="touch attack">ATTACK</button>
+        <div class="weapon-row">
+          <button class="touch weapon selected" data-weapon="0"><span>🩷</span><span>Dildo</span></button>
+          <button class="touch weapon" data-weapon="1"><span>💩</span><span>Poop</span></button>
+          <button class="touch weapon" data-weapon="2"><span>⚡</span><span>Shock</span></button>
+          <button class="touch weapon" data-weapon="3"><span>❄️</span><span>Freeze</span></button>
+          <button class="touch weapon" data-weapon="4"><span>💦</span><span>Golden Shower</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="multiplayerScreen" class="screen hidden">
+    <div class="multiplayer-box">
+      <div class="label">Multiplayer</div>
+      <div id="multiplayerBigStatus" class="multiplayer-big-status offline">Offline</div>
+      <p>Click Connect to join the multiplayer room. Other connected players will appear on the same screen.</p>
+      <p>If it says Offline or Needs server, the WebSocket server is not running yet.</p>
+      <div class="multiplayer-actions">
+        <button id="connectMultiplayerBtn" class="btn primary">Connect</button>
+        <button id="closeMultiplayerBtn" class="btn">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cheatsScreen" class="screen hidden">
+    <div class="cheats-box">
+      <div class="label">Cheats</div>
+      <div class="cheats-text">חכה חכה...</div>
+      <button id="closeCheatsBtn" class="btn primary">Back</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const W = 920, H = 590;
+  const WEAPONS = [
+    { name:"Pink Dildo", short:"Dildo", icon:"🩷", damage:26, range:84, cooldown:420, effect:"pink" },
+    { name:"Poop Bucket", short:"Poop", icon:"💩", damage:36, range:112, cooldown:700, effect:"poop" },
+    { name:"Shocker", short:"Shock", icon:"⚡", damage:24, range:175, cooldown:540, effect:"shock" },
+    { name:"Freezer", short:"Freeze", icon:"❄️", damage:18, range:145, cooldown:620, effect:"freeze" },
+    { name:"Golden Shower", short:"Golden Shower", icon:"💦", damage:22, range:210, cooldown:500, effect:"pee" }
+  ];
+  const ENEMY_TYPES = [
+    { name:"Shower Diva", hp:54, damage:8, speed:62, color:"#fb7185", hair:"#78350f", kind:"female" },
+    { name:"Bath Queen", hp:68, damage:10, speed:52, color:"#f472b6", hair:"#92400e", kind:"female" },
+    { name:"Toilet Duchess", hp:82, damage:12, speed:45, color:"#d946ef", hair:"#431407", kind:"female" },
+    { name:"Kiddush Screamer", hp:102, damage:14, speed:54, color:"#171717", hair:"#000", kind:"female", special:true, speech:"ביקשתי יין קידוש!!" }
+  ];
+  const STAGE2_TYPES = [
+    { name:"Bearded Ladder Guy", hp:96, damage:13, speed:55, color:"#0f766e", hair:"#3f2b1f", kind:"beard", speeches:["יש לך סולם?", "אני אשלם לך בתשלום"] },
+    { name:"Army Civilian Guy", hp:118, damage:16, speed:50, color:"#166534", hair:"#111827", kind:"army", speeches:["חכה חכה באזרחות"] }
+  ];
+  const POWERUPS = [
+    { type:"newspaper", name:"ז'ורנאל אישה", icon:"📰", color:"#fde68a", message:"ז'ורנאל אישה collected. Speed boosted for 5 seconds." },
+    { type:"bavaria", name:"Bavaria Chocolate", icon:"🍫", color:"#7c2d12", message:"Bavaria Chocolate collected. HP fully restored." },
+    { type:"nofap", name:"No-Fap Challenge", icon:"✋🚫", color:"#ffffff", message:"NO-FAP CHALLENGE! Extreme power for 4 seconds." }
+  ];
+  const keys = { up:false, down:false, left:false, right:false };
+  let soundOn = true, last = 0, raf = 0;
+  let musicTimer = null, musicMode = "none", musicStep = 0;
+  let audioCtx = null;
+  let canvasRect = null;
+  let rectTimer = 0;
+  let ws = null;
+  let wsReady = false;
+  let wsConnecting = false;
+  let lastNetSend = 0;
+  const playerId = Math.random().toString(36).slice(2, 10);
+  const PERF = { maxParticles: 140, maxPopups: 22, maxPowerups: 2, maxCarts: 1, maxEnemies: 12 };
+  const game = { screen:"menu", message:"Welcome to the cursed bathroom.", player:null, remotePlayers:{}, enemies:[], particles:[], popups:[], powerups:[], carts:[], cycle:1, stage:1, stageKills:0, target:50, weapon:0, character:"current", unlockedCharacters:false, choosingAfterWin:false, victoryButton:{x:W/2-115,y:H/2+68,w:230,h:62}, lastAttack:0, attackFx:null, damageBoostUntil:0, noFapUntil:0, speedBoostUntil:0, nextEnemyId:1, nextPowerupAt:0, nextCartAt:0, nextGremlinAt:0, cameraShake:0, gameOver:false, gameWon:false };
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const now=()=>performance.now();
+  function difficulty(){ return 1 + (game.cycle - 1) * 0.55; }
+  function stageTarget(stage){ const bonus = (game.cycle - 1) * 60; if(stage===1)return 50 + bonus; if(stage===2)return 100 + bonus; if(stage===3)return 1; return 50 + bonus; }
+  function maxActiveEnemies(){ if(game.stage===1)return Math.min(8 + game.cycle, PERF.maxEnemies); if(game.stage===2)return Math.min(10 + game.cycle, PERF.maxEnemies); return 1; }
+  function getAudio(){ if(!soundOn)return null; const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null; if(!audioCtx) audioCtx=new AC(); if(audioCtx.state==="suspended") audioCtx.resume(); return audioCtx; }
+  function playNote(freq, duration=.12, type="triangle", gain=.018){ const ac=getAudio(); if(!ac)return; const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime; o.type=type; o.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(Math.max(.0001,gain),t); g.gain.exponentialRampToValueAtTime(.0001,t+duration); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+duration+.02); o.onended=()=>{ try{o.disconnect();g.disconnect();}catch(e){} }; }
+  function tone(type){ if(!soundOn)return; const s={start:[330,660,.16,"triangle",.035],attack:[220,90,.1,"square",.035],hit:[120,60,.08,"sawtooth",.045],level:[420,840,.22,"triangle",.04],cart:[80,45,.18,"square",.03],death:[180,50,.35,"sawtooth",.05],pickup:[600,900,.16,"triangle",.04],win:[520,1040,.35,"triangle",.05]}[type]||[200,100,.1,"square",.03]; playNote(s[0],s[2],s[3],s[4]); }
+  function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } musicMode="none"; musicStep=0; }
+  function startMusic(mode){ if(!soundOn)return; if(musicMode===mode&&musicTimer)return; stopMusic(); musicMode=mode; musicStep=0; const menu=[147,196,220,247,294,247,220,196,165,220,247,262,330,262,247,220]; const funky=[196,247,294,330,294,247,220,247,196,262,330,392,330,294,247,220]; const victory=[262,330,392,523,494,392,330,262,294,370,440,587,523,440,370,294]; musicTimer=setInterval(()=>{ if(!soundOn){stopMusic();return;} const seq=mode==="victory"?victory:mode==="menu"?menu:funky; const note=seq[musicStep%seq.length]; if(mode==="victory"){ playNote(note,.42,"sine",.018); if(musicStep%2===0)playNote(note/2,.55,"triangle",.01); } else if(mode==="menu"){ playNote(note,.18,"square",.012); if(musicStep%4===0)playNote(note/2,.22,"triangle",.01); } else { playNote(note,.12,musicStep%4===0?"square":"triangle",.014); if(musicStep%4===0)playNote(82,.08,"sawtooth",.018); if(musicStep%8===4)playNote(123,.08,"square",.012); } musicStep++; }, mode==="victory"?360:mode==="menu"?210:145); }
+  function updateMultiplayerStatus(text, cls){ const el=document.getElementById("multiplayerStatus"); if(el){ el.textContent=text; el.className=`multiplayer-status ${cls}`; } const big=document.getElementById("multiplayerBigStatus"); if(big){ big.textContent=text.replace("Multiplayer: ",""); big.className=`multiplayer-big-status ${cls}`; } }
+  function initMultiplayer(){
+    if(location.protocol === "file:"){ updateMultiplayerStatus("Multiplayer: Needs server", "offline"); return; }
+    if(ws || wsConnecting) return;
+    const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    try {
+      wsConnecting = true;
+      updateMultiplayerStatus("Multiplayer: Connecting", "connecting");
+      ws = new WebSocket(url);
+      ws.onopen = () => { wsReady = true; wsConnecting = false; updateMultiplayerStatus("Multiplayer: Connected", "connected"); game.message = "Multiplayer connected."; };
+      ws.onclose = () => { wsReady = false; wsConnecting = false; ws = null; updateMultiplayerStatus("Multiplayer: Offline", "offline"); };
+      ws.onerror = () => { wsReady = false; wsConnecting = false; updateMultiplayerStatus("Multiplayer: Offline", "offline"); };
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if(msg.type === "players") {
+            game.remotePlayers = {};
+            Object.keys(msg.players || {}).forEach(id => { if(id !== playerId) game.remotePlayers[id] = msg.players[id]; });
+          }
+          if(msg.type === "leave" && msg.id) delete game.remotePlayers[msg.id];
+        } catch(e) {}
+      };
+    } catch(e) { wsReady = false; }
+  }
+  function sendMultiplayerUpdate(t){
+    if(!wsReady || !ws || !game.player || t - lastNetSend < 80) return;
+    lastNetSend = t;
+    ws.send(JSON.stringify({ type:"update", id:playerId, player:{ x:game.player.x, y:game.player.y, hp:game.player.hp, maxHp:game.player.maxHp, level:game.player.level, weapon:game.weapon, character:game.character, dir:game.player.dir, stage:game.stage, cycle:game.cycle }}));
+  }
+  function drawRemotePlayer(remote, id){
+    if(!remote || !Number.isFinite(remote.x) || !Number.isFinite(remote.y)) return;
+    const oldCharacter = game.character;
+    const oldWeapon = game.weapon;
+    const oldPlayer = game.player;
+    game.character = remote.character || "current";
+    game.weapon = Number.isInteger(remote.weapon) && WEAPONS[remote.weapon] ? remote.weapon : 0;
+    game.player = { x:remote.x, y:remote.y, hp:remote.hp || 100, maxHp:remote.maxHp || 100, level:remote.level || 1, dir:remote.dir || 1, walk:performance.now()/130 };
+    ctx.globalAlpha = .72;
+    drawPlayer(false);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#020617";
+    ctx.lineWidth = 4;
+    ctx.font = "bold 12px Arial";
+    const label = `P-${String(id).slice(0,3)}`;
+    ctx.strokeText(label, remote.x - 16, remote.y - 70);
+    ctx.fillText(label, remote.x - 16, remote.y - 70);
+    game.player = oldPlayer;
+    game.weapon = oldWeapon;
+    game.character = oldCharacter;
+  }
+  function showCharacterSelect(afterWin=false){ game.choosingAfterWin=afterWin; document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.remove("hidden"); document.getElementById("characterSubtitle").textContent=afterWin?"Boss beaten. Choose a character for the next tougher cycle, or continue with the same one.":"Choose your hero. More characters unlock after beating the main boss."; document.getElementById("continueSameBtn").classList.toggle("hidden",!afterWin); updateCharacterCards(); }
+  function enterGame(){ document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.remove("hidden"); game.screen="game"; initMultiplayer(); startMusic("game"); cancelAnimationFrame(raf); last=now(); raf=requestAnimationFrame(loop); }
+  function startGame(){ stopMusic(); showCharacterSelect(false); }
+  function beginSelectedRun(char){ game.character=char; game.cycle=1; resetGame(false); enterGame(); tone("start"); }
+  function continueRun(char=game.character){ game.character=char; game.cycle++; resetGame(true); enterGame(); tone("level"); }
+  function resetGame(keepProgress=false){ const saved=keepProgress&&game.player?{...game.player}:null; game.player=saved?{...saved,x:W/2,y:H/2,hp:saved.maxHp,dir:1,walk:0}:{x:W/2,y:H/2,hp:165,maxHp:165,xp:0,nextXp:100,level:1,gold:0,dir:1,walk:0}; game.enemies=[]; game.particles=[]; game.popups=[]; game.powerups=[]; game.carts=[]; game.stage=1; game.stageKills=0; game.target=stageTarget(1); if(!keepProgress)game.weapon=0; game.lastAttack=0; game.attackFx=null; game.damageBoostUntil=0; game.noFapUntil=0; game.speedBoostUntil=0; if(!keepProgress)game.nextEnemyId=1; game.nextPowerupAt=now()+4200; game.nextCartAt=now()+6200; game.nextGremlinAt=now()+3000; game.cameraShake=0; game.gameOver=false; game.gameWon=false; game.message=keepProgress?`Cycle ${game.cycle} started.`:`Game started.`; fillEnemies(); updateWeaponButtons(); }
+  function edgePos(){ const side=Math.floor(Math.random()*4); return [{x:30,y:rnd(70,H-70)},{x:W-30,y:rnd(70,H-70)},{x:rnd(70,W-70),y:50},{x:rnd(70,W-70),y:H-45}][side]; }
+  function pickEnemyType(){ if(game.stage>=2 && Math.random()<.42) return STAGE2_TYPES[Math.floor(Math.random()*STAGE2_TYPES.length)]; return Math.random()<.17 ? ENEMY_TYPES[3] : ENEMY_TYPES[Math.floor(Math.random()*3)]; }
+  function makeEnemy(){ const type=pickEnemyType(), pos=edgePos(), scale=difficulty(), hp=Math.floor((type.hp+game.stage*8)*scale*.82); const speech=type.speech || (type.speeches && Math.random()<.55 ? type.speeches[Math.floor(Math.random()*type.speeches.length)] : (Math.random()<.25 ? "אמא מונעת!!" : "")); return { id:game.nextEnemyId++, boss:false, gremlin:false, type:type.name, kind:type.kind||"female", x:pos.x, y:pos.y, hp, maxHp:hp, damage:Math.max(4,Math.floor((type.damage+game.stage)*scale*.72)), speed:type.speed+(game.cycle-1)*5, xp:Math.floor(type.hp*.9*scale), color:type.color, hair:type.hair, special:type.special, speech, flash:0, walk:0 }; }
+  function makeBoss(){ const scale=difficulty(), hp=Math.floor(850*scale); return { id:game.nextEnemyId++, boss:true, gremlin:false, type:"Blonde Boss", kind:"boss", x:W/2, y:170, hp, maxHp:hp, damage:Math.floor(18*scale), speed:34+(game.cycle-1)*4, xp:Math.floor(600*scale), color:"#ec4899", hair:"#facc15", special:true, speech:"כל המלשינים מהחסידה", flash:0, walk:0 }; }
+  function makeGremlin(){ const pos=edgePos(); return { id:game.nextEnemyId++, boss:false, gremlin:true, type:"Brown Shower Gremlin", kind:"gremlin", x:pos.x, y:pos.y, hp:1, maxHp:1, damage:5+game.cycle, speed:92+(game.cycle-1)*9, xp:12+game.cycle*4, color:"#92400e", hair:"#451a03", speech:"", flash:0, walk:0 }; }
+  function fillEnemies(){ if(game.stage===3){ if(!game.enemies.some(e=>e.boss)) game.enemies.push(makeBoss()); return; } const remaining=game.target-game.stageKills, desired=Math.min(maxActiveEnemies(),Math.max(0,remaining)); while(game.enemies.length<desired) game.enemies.push(makeEnemy()); }
+  function advanceStage(){ if(game.stage===3){ winGame(); return; } game.stage++; game.stageKills=0; game.target=stageTarget(game.stage); game.enemies=[]; game.powerups=[]; game.carts=[]; game.player.hp=Math.min(game.player.maxHp,game.player.hp+45); game.message=game.stage===3?"Boss fight started.":"Next level started."; tone("level"); burst(W/2,H/2,"#fde047",45); fillEnemies(); }
+  function winGame(){ game.gameWon=true; game.unlockedCharacters=true; game.message="YOU WON! Press YES to continue."; startMusic("victory"); tone("win"); burst(W/2,H/2,"#fde68a",80); }
+  function addXp(amount){ const p=game.player; p.xp+=amount; p.gold+=Math.floor(amount/4); while(p.xp>=p.nextXp){ p.xp-=p.nextXp; p.level++; p.nextXp=Math.floor(p.nextXp*1.38); p.maxHp+=22; p.hp=p.maxHp; game.message=`Level up! Level ${p.level}.`; tone("level"); burst(p.x,p.y,"#a78bfa",36); } }
+  function ensureWeapon(){ if(!WEAPONS[game.weapon]) game.weapon=0; }
+  function attack(target){ if(game.screen!=="game"||game.gameOver)return; if(game.gameWon){ return; } ensureWeapon(); const t=now(), wpn=WEAPONS[game.weapon]; if(t-game.lastAttack<wpn.cooldown)return; game.lastAttack=t; const origin=target||game.player, nofap=t<game.noFapUntil, boosted=t<game.damageBoostUntil; const damage=wpn.damage+Math.floor(game.player.level*3)+(boosted?22:0)+(nofap?180:0); let killed=0, hit=false, killedBoss=false; game.attackFx={x:origin.x,y:origin.y,r:wpn.range,ttl:(wpn.effect==="freeze" ? .36 : (nofap ? .32 : .22)),type:wpn.effect,nofap}; tone("attack"); burst(origin.x,origin.y,nofap?"#ffffff":"#f9a8d4",nofap?28:10);
+    game.enemies=game.enemies.map(e=>{ if(dist(e,origin)<=wpn.range){ hit=true; e.hp-=damage; e.flash=.12; if(wpn.effect==="freeze"){ e.frozenUntil=t+2000; e.flash=.25; } burst(e.x,e.y,wpn.effect==="freeze"?"#93c5fd":nofap?"#ffffff":(e.boss?"#fde047":"#fb7185"), e.boss?20:10); if(nofap) game.popups.push({text:"NO-FAP HIT",x:e.x-20,y:e.y-45,ttl:.7}); } return e; }).filter(e=>{ if(e.hp<=0){ killed++; if(e.boss)killedBoss=true; addXp(e.xp); game.popups.push({text:`+${e.xp} XP`,x:e.x,y:e.y-30,ttl:1}); return false; } return true; });
+    game.carts=game.carts.map(c=>{ if(dist({x:c.x+55,y:c.y+38},origin)<=wpn.range){ c.hp-=damage; hit=true; c.flash=.12; burst(c.x+55,c.y+38,nofap?"#fff":"#a16207",18); } return c; }).filter(c=>{ if(c.hp<=0){ game.player.gold+=12; game.popups.push({text:"Cart destroyed +12 gold",x:c.x,y:c.y,ttl:1}); tone("hit"); return false; } return true; });
+    if(hit){ tone("hit"); game.cameraShake=nofap ? .18 : .08; game.message=`${wpn.name} hit for ${damage}.`; } else game.message="Missed. Get closer, slippery legend.";
+    if(killed){ if(game.stage===3){ if(killedBoss) game.stageKills=game.target; } else { game.stageKills+=killed; } if(game.stageKills>=game.target)advanceStage(); else fillEnemies(); }
+  }
+  function burst(x,y,color,count){ const free=Math.max(0,PERF.maxParticles-game.particles.length); const n=Math.min(count,free); for(let i=0;i<n;i++) game.particles.push({x,y,vx:rnd(-140,140),vy:rnd(-140,80),r:rnd(2,6),color,ttl:rnd(.25,.8)}); }
+  function spawnPowerup(t){ if(game.powerups.length>=PERF.maxPowerups||t<game.nextPowerupAt||game.gameWon)return; const item=POWERUPS[Math.floor(Math.random()*POWERUPS.length)]; game.powerups.push({...item,x:rnd(90,W-90),y:rnd(95,H-95),pulse:0}); game.nextPowerupAt=t+rnd(6500,11000); }
+  function spawnCart(t){ if(game.carts.length>=PERF.maxCarts||t<game.nextCartAt||game.gameWon)return; const fromLeft=Math.random()>.5; game.carts.push({x:fromLeft?-140:W+140,y:rnd(95,H-100),vx:fromLeft?185:-185,hit:false,spin:0,hp:90,maxHp:90,flash:0}); game.nextCartAt=t+rnd(6000,10000); game.message="A dirty supermarket cart full of garbage rolls in. You can hit it now."; tone("cart"); }
+  function spawnGremlins(t){ if(game.stage!==3||game.gameWon||t<game.nextGremlinAt)return; const count=game.enemies.filter(e=>e.gremlin).length; if(count<5&&game.enemies.length<PERF.maxEnemies) game.enemies.push(makeGremlin()); game.nextGremlinAt=t+rnd(1600,2600); }
+  function update(dt,t){ if(game.screen!=="game"||game.gameOver||game.gameWon)return; if(getCanvasRect().height<120)return; sendMultiplayerUpdate(t); const p=game.player; let dx=0,dy=0; if(keys.up)dy--; if(keys.down)dy++; if(keys.left)dx--; if(keys.right)dx++; if(dx||dy){ const len=Math.hypot(dx,dy)||1, speed=245+Math.min(p.level*6,45)+(t<game.noFapUntil?90:0)+(t<game.speedBoostUntil?120:0); p.x=clamp(p.x+(dx/len)*speed*dt,36,W-36); p.y=clamp(p.y+(dy/len)*speed*dt,50,H-34); p.dir=dx<0?-1:dx>0?1:p.dir; p.walk+=dt*12; }
+    for(const e of game.enemies){ const d=Math.max(1,dist(e,p)); const frozen=now()<e.frozenUntil; e.walk+=frozen?0:dt*(e.gremlin?15:8); if(!frozen&&d>(e.boss?58:e.gremlin?25:35)){ e.x+=((p.x-e.x)/d)*e.speed*dt; e.y+=((p.y-e.y)/d)*e.speed*dt; } e.flash=Math.max(0,e.flash-dt); }
+    const contact=game.enemies.filter(e=>dist(e,p)<(e.boss?64:e.gremlin?27:36)).reduce((sum,e)=>sum+e.damage,0)*dt*.5; if(contact>0)p.hp=clamp(p.hp-contact,0,p.maxHp);
+    spawnPowerup(t); game.powerups.forEach(item=>item.pulse+=dt*5); game.powerups=game.powerups.filter(item=>{ if(dist(item,p)<48){ if(item.type==="newspaper")game.speedBoostUntil=t+5000; if(item.type==="bavaria")game.player.hp=game.player.maxHp; if(item.type==="nofap")game.noFapUntil=t+4000; game.message=item.message; tone("pickup"); burst(item.x,item.y,item.color,item.type==="nofap"?55:26); return false; } return true; });
+    spawnCart(t); spawnGremlins(t); game.carts=game.carts.filter(c=>{ c.x+=c.vx*dt; c.spin+=dt*8; c.flash=Math.max(0,c.flash-dt); if(!c.hit&&dist({x:c.x+55,y:c.y+38},p)<62){ c.hit=true; p.hp=clamp(p.hp-25,0,p.maxHp); game.message="You got clipped by a filthy garbage cart."; game.cameraShake=.15; tone("hit"); burst(p.x,p.y,"#a16207",22); } return c.x>-190&&c.x<W+190&&c.hp>0; });
+    if(game.attackFx){ game.attackFx.ttl-=dt; if(game.attackFx.ttl<=0)game.attackFx=null; } game.particles=game.particles.filter(pt=>{ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=280*dt; pt.ttl-=dt; return pt.ttl>0; }); game.popups=game.popups.filter(po=>{ po.y-=35*dt; po.ttl-=dt; return po.ttl>0; }); game.cameraShake=Math.max(0,game.cameraShake-dt); if(p.hp<=0){ game.gameOver=true; game.message="ZAIN BATAHAT, YOU ARE DEAD"; tone("death"); } }
+  function draw(){ ctx.save(); ctx.clearRect(0,0,W,H); if(game.cameraShake>0)ctx.translate(rnd(-5,5),rnd(-5,5)); drawBathroom(); game.powerups.forEach(drawPowerup); game.carts.forEach(drawCart); game.enemies.sort((a,b)=>a.y-b.y).forEach(drawEnemy); Object.keys(game.remotePlayers).forEach(id=>drawRemotePlayer(game.remotePlayers[id], id)); drawPlayer(false); drawAttackFx(); game.particles.forEach(drawParticle); game.popups.forEach(drawPopup); drawHud(); if(game.gameOver)drawGameOver(); if(game.gameWon)drawVictory(); ctx.restore(); }
+  function roundRect(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill)ctx.fill(); if(stroke)ctx.stroke(); }
+  function drawBathroom(){ const g=ctx.createLinearGradient(0,0,W,H); if(game.stage===2){ g.addColorStop(0,"#f5e6c8"); g.addColorStop(.45,"#d6b98c"); g.addColorStop(1,"#9f7f55"); } else if(game.stage===3){ g.addColorStop(0,"#3b0764"); g.addColorStop(.52,"#7f1d1d"); g.addColorStop(1,"#111827"); } else { g.addColorStop(0,"#12303d"); g.addColorStop(.55,"#245466"); g.addColorStop(1,"#08111e"); } ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.strokeStyle="rgba(255,255,255,.1)"; ctx.lineWidth=1; for(let x=0;x<W;x+=46){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();} for(let y=0;y<H;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();} for(let i=0;i<16;i++){ctx.fillStyle=game.stage===2?"rgba(255,255,255,.2)":"rgba(103,232,249,.16)";ctx.beginPath();ctx.ellipse(40+(i*73)%830,75+(i*57)%430,34+(i%4)*10,12+(i%3)*6,(i%5)*.3,0,Math.PI*2);ctx.fill();} drawBath(40,38); drawBath(750,72); drawToilet(70,485); drawToilet(800,490); drawToilet(420,455); drawShower(310,20); drawShower(610,20); }
+  function drawBath(x,y){ctx.fillStyle="rgba(255,255,255,.78)";roundRect(x,y,128,78,28,true,false);ctx.fillStyle="rgba(207,250,254,.65)";roundRect(x+16,y+18,96,42,20,true,false);ctx.font="24px Arial";ctx.fillText("🛁",x+16,y+30);} function drawToilet(x,y){ctx.font="42px Arial";ctx.fillText("🚽",x,y);} function drawShower(x,y){ctx.fillStyle="#94a3b8";roundRect(x,y,12,42,6,true,false);roundRect(x+5,y+35,54,12,6,true,false);ctx.font="28px Arial";ctx.fillText("🚿",x+20,y+76);ctx.strokeStyle="rgba(165,243,252,.35)";for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(x+28+i*7,y+75);ctx.lineTo(x+25+i*8,y+130);ctx.stroke();}}
+  function drawPlayer(forcePink){ ensureWeapon(); const p=game.player,bob=Math.sin(p.walk)*3,wpn=WEAPONS[forcePink?0:game.weapon]; ctx.save();ctx.translate(p.x,p.y+bob); if(now()<game.noFapUntil){ctx.strokeStyle="rgba(255,255,255,.75)";ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,4,54+Math.sin(p.walk)*5,0,Math.PI*2);ctx.stroke();} ctx.scale(p.dir,1); ctx.fillStyle="rgba(0,0,0,.28)";ctx.beginPath();ctx.ellipse(0,38,30,9,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fde68a";ctx.beginPath();ctx.arc(0,-34,18,0,Math.PI*2);ctx.fill();if(game.character==="cap"){ctx.fillStyle="#1e293b";roundRect(-20,-52,40,13,7,true,false);ctx.fillStyle="#0f172a";roundRect(2,-47,24,6,3,true,false);}if(game.character==="blackhair"){ctx.fillStyle="#020617";ctx.beginPath();ctx.arc(0,-46,17,Math.PI,Math.PI*2);ctx.fill();}ctx.fillStyle=game.character==="cap"?"#22c55e":game.character==="blackhair"?"#a855f7":"#38bdf8";roundRect(-22,-15,44,52,20,true,false);ctx.fillStyle="#1e3a8a";roundRect(-20,6,40,32,16,true,false);ctx.strokeStyle="#fde68a";ctx.lineWidth=10;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-20,-2);ctx.lineTo(-34,18+Math.sin(p.walk)*7);ctx.moveTo(20,-2);ctx.lineTo(34,18-Math.sin(p.walk)*7);ctx.stroke();ctx.strokeStyle="#1e293b";ctx.beginPath();ctx.moveTo(-10,28);ctx.lineTo(-16,54+Math.sin(p.walk)*6);ctx.moveTo(10,28);ctx.lineTo(16,54-Math.sin(p.walk)*6);ctx.stroke();ctx.strokeStyle=wpn.effect==="poop"?"#854d0e":wpn.effect==="shock"?"#fde047":wpn.effect==="freeze"?"#93c5fd":wpn.effect==="pee"?"#facc15":"#f9a8d4";ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(28,8);ctx.lineTo(42,44);ctx.stroke();ctx.restore(); }
+  function drawEnemy(e){ const s=e.boss?1.85:e.gremlin?.58:1; ctx.save();ctx.translate(e.x,e.y+Math.sin(e.walk)*2);ctx.scale(s,s);ctx.fillStyle="rgba(0,0,0,.28)";ctx.beginPath();ctx.ellipse(0,38,26,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=now()<e.frozenUntil?"#60a5fa":(e.flash>0?"#fecaca":e.color);roundRect(-24,-20,48,74,22,true,false);ctx.fillStyle=e.hair;roundRect(-20,-32,40,24,18,true,false);ctx.fillStyle=e.kind==="army"?"#fef3c7":e.kind==="beard"?"#fde68a":e.kind==="gremlin"?"#78350f":e.boss?"#fde68a":e.color==="#171717"?"#525252":"#fef3c7";ctx.beginPath();ctx.arc(0,-18,17,0,Math.PI*2);ctx.fill();ctx.fillStyle="#000";ctx.beginPath();ctx.arc(-7,-20,2.8,0,Math.PI*2);ctx.arc(7,-20,2.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#db2777";roundRect(-7,-10,14,4,4,true,false); if(e.kind==="beard"){ctx.fillStyle="#3f2b1f";roundRect(-12,-6,24,16,8,true,false);} if(e.kind==="army"){ctx.fillStyle="#166534";roundRect(-22,-4,44,38,12,true,false);ctx.fillStyle="#052e16";roundRect(-18,-38,36,10,5,true,false);} ctx.strokeStyle=e.color==="#171717"?"#404040":"#fef3c7";ctx.lineWidth=7;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-22,7);ctx.lineTo(-34,16);ctx.moveTo(22,7);ctx.lineTo(34,16);ctx.moveTo(-10,42);ctx.lineTo(-12,62);ctx.moveTo(10,42);ctx.lineTo(12,62);ctx.stroke();ctx.restore(); if(!e.gremlin)drawHpBar(e.x,e.y-(e.boss?104:66),e.boss?150:64,e.hp/e.maxHp); if(e.speech)drawBubble(e.x,e.y-(e.boss?140:95),e.speech,e.boss?"#fde047":"#fff"); }
+  function drawHpBar(x,y,w,pct){ctx.fillStyle="rgba(0,0,0,.58)";roundRect(x-w/2,y,w,8,8,true,false);ctx.fillStyle="#f87171";roundRect(x-w/2,y,w*clamp(pct,0,1),8,8,true,false);} function drawBubble(x,y,text,color){ctx.font="bold 13px Arial";const w=ctx.measureText(text).width+22;ctx.fillStyle=color;ctx.strokeStyle="rgba(0,0,0,.25)";ctx.lineWidth=1;roundRect(x-w/2,y,w,26,13,true,true);ctx.fillStyle="#111827";ctx.textAlign="center";ctx.fillText(text,x,y+17);ctx.textAlign="left";}
+  function drawPowerup(item){const pulse=1+Math.sin(item.pulse)*.08;ctx.save();ctx.translate(item.x,item.y);ctx.scale(pulse,pulse);ctx.fillStyle=item.color;ctx.globalAlpha=.92;roundRect(-31,-27,62,54,14,true,false);ctx.globalAlpha=1;ctx.font="29px Arial";ctx.textAlign="center";ctx.fillText(item.icon,0,10);ctx.font="bold 11px Arial";ctx.fillStyle=item.type==="nofap"?"#020617":"#fff";ctx.strokeStyle=item.type==="nofap"?"#fff":"#020617";ctx.lineWidth=4;ctx.strokeText(item.name,0,43);ctx.fillText(item.name,0,43);ctx.textAlign="left";ctx.restore();}
+  function drawCart(c){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(Math.sin(c.spin)*.08);ctx.font="22px Arial";ctx.fillText("🦠",0,10);ctx.fillText("🥫",26,12);ctx.fillText("🗑️",50,8);ctx.fillText("💩",72,12);ctx.strokeStyle=c.flash>0?"#fff":"#cbd5e1";ctx.lineWidth=5;roundRect(18,18,86,44,8,false,true);ctx.beginPath();ctx.moveTo(100,20);ctx.lineTo(122,10);ctx.stroke();ctx.fillStyle="#78350f";roundRect(32,31,58,18,6,true,false);ctx.fillStyle="#020617";ctx.beginPath();ctx.arc(34,70,8,0,Math.PI*2);ctx.arc(88,70,8,0,Math.PI*2);ctx.fill();ctx.restore();drawHpBar(c.x+60,c.y-8,70,c.hp/c.maxHp);}
+  function drawAttackFx(){if(!game.attackFx)return;const fx=game.attackFx,a=clamp(fx.ttl/(fx.nofap ? .32 : .22),0,1); if(fx.nofap){ctx.strokeStyle=`rgba(255,255,255,${a})`;ctx.lineWidth=10;ctx.beginPath();ctx.arc(fx.x,fx.y,fx.r+18,0,Math.PI*2);ctx.stroke();} if(fx.type==="poop"){ctx.fillStyle=`rgba(120,53,15,${a})`;for(let i=0;i<12;i++){const ang=Math.PI*2/12*i,rr=fx.r*.72;ctx.beginPath();ctx.arc(fx.x+Math.cos(ang)*rr,fx.y+Math.sin(ang)*rr,12+i%3,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(fx.x,fx.y,fx.r*.48,0,Math.PI*2);ctx.fill();} else if(fx.type==="shock"){ctx.strokeStyle=`rgba(253,224,71,${a})`;ctx.lineWidth=5;ctx.lineCap="round";for(let i=0;i<8;i++){const ang=Math.PI*2/8*i;ctx.beginPath();ctx.moveTo(fx.x,fx.y);ctx.lineTo(fx.x+Math.cos(ang)*fx.r*.55,fx.y+Math.sin(ang)*fx.r*.55);ctx.lineTo(fx.x+Math.cos(ang+.18)*fx.r,fx.y+Math.sin(ang+.18)*fx.r);ctx.stroke();}ctx.beginPath();ctx.arc(fx.x,fx.y,fx.r*.72,0,Math.PI*2);ctx.stroke();} else if(fx.type==="freeze"){ctx.strokeStyle=`rgba(147,197,253,${a})`;ctx.fillStyle=`rgba(96,165,250,${a*.18})`;ctx.lineWidth=7;ctx.beginPath();ctx.arc(fx.x,fx.y,fx.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle=`rgba(219,234,254,${a})`;for(let i=0;i<6;i++){const ang=Math.PI*2/6*i;ctx.beginPath();ctx.moveTo(fx.x+Math.cos(ang)*18,fx.y+Math.sin(ang)*18);ctx.lineTo(fx.x+Math.cos(ang)*fx.r,fx.y+Math.sin(ang)*fx.r);ctx.stroke();}} else if(fx.type==="pee"){ctx.strokeStyle=`rgba(250,204,21,${a})`;ctx.fillStyle=`rgba(253,224,71,${a*.22})`;ctx.lineWidth=12;ctx.lineCap="round";const dir=game.player?game.player.dir:1;ctx.beginPath();ctx.moveTo(fx.x,fx.y);ctx.bezierCurveTo(fx.x+dir*fx.r*.28,fx.y-18,fx.x+dir*fx.r*.68,fx.y+24,fx.x+dir*fx.r,fx.y+4);ctx.stroke();ctx.lineWidth=5;ctx.strokeStyle=`rgba(255,255,255,${a*.55})`;ctx.beginPath();ctx.moveTo(fx.x+dir*18,fx.y-4);ctx.bezierCurveTo(fx.x+dir*fx.r*.32,fx.y-26,fx.x+dir*fx.r*.7,fx.y+8,fx.x+dir*fx.r*.96,fx.y-2);ctx.stroke();for(let i=0;i<8;i++){ctx.beginPath();ctx.arc(fx.x+dir*rnd(30,fx.r),fx.y+rnd(-18,28),rnd(3,7),0,Math.PI*2);ctx.fill();}} else {ctx.strokeStyle=`rgba(251,207,232,${a})`;ctx.lineWidth=6;ctx.beginPath();ctx.arc(fx.x,fx.y,fx.r,0,Math.PI*2);ctx.stroke();}}
+  function drawParticle(pt){ctx.globalAlpha=clamp(pt.ttl/.7,0,1);ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;} function drawPopup(po){ctx.globalAlpha=clamp(po.ttl,0,1);ctx.font="bold 16px Arial";ctx.fillStyle="#fff";ctx.strokeStyle="#020617";ctx.lineWidth=4;ctx.strokeText(po.text,po.x,po.y);ctx.fillText(po.text,po.x,po.y);ctx.globalAlpha=1;}
+  function drawHud(){const p=game.player;ctx.fillStyle="rgba(2,6,23,.68)";roundRect(12,12,340,132,18,true,false);ctx.fillStyle="#fff";ctx.font="bold 14px Arial";ctx.fillText(`Level ${p.level}`,24,34);ctx.fillText(`Gold ${p.gold}`,270,34);bar(24,48,292,10,p.hp/p.maxHp,"#f87171",`${Math.ceil(p.hp)}/${p.maxHp}`);bar(24,70,292,10,p.xp/p.nextXp,"#a78bfa",`${p.xp}/${p.nextXp}`);const stageText=game.stage===3?"BOSS":`${game.stageKills}/${game.target}`,stagePct=game.stage===3?(game.enemies.some(e=>e.boss)?.25:1):game.stageKills/game.target;bar(24,92,292,10,stagePct,"#22d3ee",`Stage ${game.stage}: ${stageText}`);ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.fillText(`Weapon: ${WEAPONS[game.weapon].name}`,24,126);if(now()<game.speedBoostUntil)badge(370,18,"SPEED","#22c55e");if(now()<game.noFapUntil)badge(370,52,"NO-FAP","#fff");ctx.fillStyle="#cffafe";ctx.font="bold 14px Arial";ctx.fillText(game.message,18,H-18);} function bar(x,y,w,h,pct,color,label){ctx.fillStyle="rgba(0,0,0,.45)";roundRect(x,y,w,h,8,true,false);ctx.fillStyle=color;roundRect(x,y,w*clamp(pct,0,1),h,8,true,false);ctx.fillStyle="#e2e8f0";ctx.font="bold 11px Arial";ctx.fillText(label,x,y-3);} function badge(x,y,text,color){ctx.fillStyle=color;roundRect(x,y,104,24,12,true,false);ctx.fillStyle="#020617";ctx.font="bold 11px Arial";ctx.fillText(text,x+12,y+16);}
+  function drawGameOver(){ctx.fillStyle="rgba(0,0,0,.72)";ctx.fillRect(0,0,W,H);ctx.fillStyle="#fca5a5";ctx.font="900 44px Arial";ctx.textAlign="center";ctx.fillText("ZAIN BATAHAT, YOU ARE DEAD",W/2,H/2-16);ctx.fillStyle="#cbd5e1";ctx.font="bold 18px Arial";ctx.fillText(`Final stage ${game.stage} | Level ${game.player.level} | Gold ${game.player.gold}`,W/2,H/2+24);ctx.textAlign="left";}
+  function drawVictory(){const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#f97316");sky.addColorStop(.28,"#fb7185");sky.addColorStop(.58,"#f59e0b");sky.addColorStop(.74,"#38bdf8");sky.addColorStop(1,"#082f49");ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);ctx.fillStyle="rgba(255,230,150,.95)";ctx.beginPath();ctx.arc(W*.72,H*.28,56,0,Math.PI*2);ctx.fill();ctx.fillStyle="rgba(8,47,73,.78)";ctx.fillRect(0,H*.58,W,H*.42);ctx.strokeStyle="rgba(255,255,255,.25)";for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(0,H*.62+i*24);for(let x=0;x<=W;x+=28)ctx.lineTo(x,H*.62+i*24+Math.sin(x/40+i)*4);ctx.stroke();}drawBird(150,95,18);drawBird(190,120,12);drawBird(740,110,16);drawBird(780,86,11);ctx.fillStyle="rgba(0,0,0,.26)";roundRect(130,62,660,260,28,true,false);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font="900 54px Arial";ctx.fillText("YOU WON!",W/2,130);ctx.fillStyle="#fef3c7";ctx.font="900 30px Arial";ctx.fillText("WOULD YOU LIKE TO CONTINUE?",W/2,182);ctx.font="bold 18px Arial";ctx.fillText("Only YES continues to the next screen",W/2,218);const b=game.victoryButton;ctx.fillStyle="#22c55e";roundRect(b.x,b.y,b.w,b.h,22,true,false);ctx.strokeStyle="rgba(255,255,255,.65)";ctx.lineWidth=3;roundRect(b.x,b.y,b.w,b.h,22,false,true);ctx.fillStyle="#052e16";ctx.font="900 34px Arial";ctx.fillText("YES",W/2,b.y+42);ctx.textAlign="left";}
+  function drawBird(x,y,s){ctx.strokeStyle="rgba(0,0,0,.48)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,s,Math.PI*.1,Math.PI*.9);ctx.stroke();ctx.beginPath();ctx.arc(x+s*1.1,y,s,Math.PI*.1,Math.PI*.9);ctx.stroke();}
+  function getCanvasRect(){ const t=performance.now(); if(!canvasRect||t>rectTimer){ canvasRect=canvas.getBoundingClientRect(); rectTimer=t+250; } return canvasRect; }
+  function pointerToGame(ev){const r=getCanvasRect();return{x:(ev.clientX-r.left)*(W/r.width),y:(ev.clientY-r.top)*(H/r.height)};} function setKey(n,v){keys[n]=v;} function bindHold(btn,key){const down=e=>{e.preventDefault();setKey(key,true);btn.classList.add("active")},up=e=>{e.preventDefault();setKey(key,false);btn.classList.remove("active")};btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);} function updateWeaponButtons(){ ensureWeapon(); document.querySelectorAll(".weapon").forEach(b=>b.classList.toggle("selected",Number(b.dataset.weapon)===game.weapon));}
+  function characterMarkup(ch, locked){
+    if(ch==="current") return `<div class="char-avatar"><div class="char-face"></div><div class="char-body"></div></div>`;
+    if(locked) return `<div class="char-avatar"><div class="char-lock-silhouette ${ch==="cap"?"cap":"hair"}"></div></div>`;
+    if(ch==="cap") return `<div class="char-avatar"><div class="char-face"></div><div class="char-body" style="background:#22c55e"></div><div style="position:absolute;top:12px;width:62px;height:15px;border-radius:999px;background:#1e293b"></div><div style="position:absolute;top:22px;right:18px;width:34px;height:8px;border-radius:999px;background:#0f172a"></div></div>`;
+    return `<div class="char-avatar"><div class="char-face"></div><div class="char-body" style="background:#a855f7"></div><div style="position:absolute;top:14px;width:56px;height:28px;border-radius:50% 50% 14px 14px;background:#020617"></div></div>`;
+  }
+  function updateCharacterCards(){document.querySelectorAll(".char-card").forEach(card=>{const ch=card.dataset.char, locked=ch!=="current"&&!game.unlockedCharacters;card.classList.toggle("locked",locked);card.disabled=locked;card.innerHTML=characterMarkup(ch,locked);});}
+  function bindEvents(){
+    document.getElementById("startBtn").addEventListener("pointerdown",e=>{e.preventDefault();startGame();});
+    document.getElementById("restartBtn").addEventListener("pointerdown",e=>{e.preventDefault();game.cycle=1;resetGame(false);});
+    document.getElementById("menuBtn").addEventListener("pointerdown",e=>{e.preventDefault();game.screen="menu";document.getElementById("menuScreen").classList.remove("hidden");document.getElementById("characterScreen").classList.add("hidden");document.getElementById("gameScreen").classList.add("hidden");startMusic("menu");});
+    document.getElementById("backToMenuBtn").addEventListener("pointerdown",e=>{e.preventDefault();document.getElementById("characterScreen").classList.add("hidden");document.getElementById("menuScreen").classList.remove("hidden");startMusic("menu");});
+    document.getElementById("continueSameBtn").addEventListener("pointerdown",e=>{e.preventDefault();continueRun(game.character);});
+    document.querySelectorAll(".char-card").forEach(card=>card.addEventListener("pointerdown",e=>{e.preventDefault();const ch=card.dataset.char;if(ch!=="current"&&!game.unlockedCharacters)return;if(game.choosingAfterWin)continueRun(ch);else beginSelectedRun(ch);}));
+    function toggleSound(){soundOn=!soundOn;document.getElementById("soundBtnMenu").textContent=`Sound: ${soundOn?"On":"Off"}`;document.getElementById("soundBtnGame").textContent=`Sound ${soundOn?"On":"Off"}`;if(!soundOn)stopMusic();else if(game.gameWon)startMusic("victory");else if(game.gameWon)startMusic("victory");else if(game.screen==="game")startMusic("game");else startMusic("menu");}
+    document.getElementById("soundBtnMenu").addEventListener("pointerdown",e=>{e.preventDefault();toggleSound();});
+    document.getElementById("soundBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();toggleSound();});
+    function showCheats(){ document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("multiplayerScreen").classList.add("hidden"); document.getElementById("cheatsScreen").classList.remove("hidden"); }
+    function closeCheats(){ document.getElementById("cheatsScreen").classList.add("hidden"); if(game.screen==="game") document.getElementById("gameScreen").classList.remove("hidden"); else document.getElementById("menuScreen").classList.remove("hidden"); }
+    function showMultiplayer(){ document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("cheatsScreen").classList.add("hidden"); document.getElementById("multiplayerScreen").classList.remove("hidden"); if(wsReady) updateMultiplayerStatus("Multiplayer: Connected","connected"); else if(wsConnecting) updateMultiplayerStatus("Multiplayer: Connecting","connecting"); else updateMultiplayerStatus(location.protocol==="file:"?"Multiplayer: Needs server":"Multiplayer: Offline","offline"); }
+    function closeMultiplayer(){ document.getElementById("multiplayerScreen").classList.add("hidden"); if(game.screen==="game") document.getElementById("gameScreen").classList.remove("hidden"); else document.getElementById("menuScreen").classList.remove("hidden"); }
+    document.getElementById("multiplayerBtnMenu").addEventListener("pointerdown",e=>{e.preventDefault();showMultiplayer();});
+    document.getElementById("multiplayerBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();showMultiplayer();});
+    document.getElementById("connectMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();initMultiplayer();});
+    document.getElementById("closeMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();closeMultiplayer();});
+    document.getElementById("cheatsBtnMenu").addEventListener("pointerdown",e=>{e.preventDefault();showCheats();});
+    document.getElementById("cheatsBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();showCheats();});
+    document.getElementById("closeCheatsBtn").addEventListener("pointerdown",e=>{e.preventDefault();closeCheats();});
+    document.getElementById("attackBtn").addEventListener("pointerdown",e=>{e.preventDefault();attack();});
+    document.querySelectorAll(".weapon").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();game.weapon=Number(b.dataset.weapon);updateWeaponButtons();game.message=`Equipped ${WEAPONS[game.weapon].name}.`;}));
+    document.querySelectorAll("[data-key]").forEach(b=>bindHold(b,b.dataset.key));
+    canvas.addEventListener("pointerdown",e=>{e.preventDefault();const pnt=pointerToGame(e);if(game.gameOver){resetGame(false);return;}if(game.gameWon){const b=game.victoryButton;if(pnt.x>=b.x&&pnt.x<=b.x+b.w&&pnt.y>=b.y&&pnt.y<=b.y+b.h)showCharacterSelect(true);return;}attack(pnt);});
+    window.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(game.screen==="game"&&["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"," "].includes(k))e.preventDefault();if(["arrowup","w"].includes(k))keys.up=true;if(["arrowdown","s"].includes(k))keys.down=true;if(["arrowleft","a"].includes(k))keys.left=true;if(["arrowright","d"].includes(k))keys.right=true;if(k===" "){e.preventDefault();attack();}if(["1","2","3","4","5"].includes(k)){game.weapon=Number(k)-1;updateWeaponButtons();}if(k==="enter"&&game.screen==="menu")startGame();else if(k==="enter"&&game.gameWon){ /* victory continues only through the YES button */ }});
+    window.addEventListener("keyup",e=>{const k=e.key.toLowerCase();if(["arrowup","w"].includes(k))keys.up=false;if(["arrowdown","s"].includes(k))keys.down=false;if(["arrowleft","a"].includes(k))keys.left=false;if(["arrowright","d"].includes(k))keys.right=false;});
+    window.addEventListener("resize",()=>{canvasRect=null;});
+    window.addEventListener("blur",()=>{keys.up=keys.down=keys.left=keys.right=false;});
+  }
+  function loop(t){const dt=Math.min(.028,(t-last)/1000||.016);last=t;update(dt,t);draw();raf=requestAnimationFrame(loop);} function tests(){console.assert(stageTarget(1)===50,"stage 1");console.assert(stageTarget(2)===100,"stage 2");console.assert(stageTarget(3)===1,"stage 3");console.assert(WEAPONS.length===5,"5 weapons");console.assert(maxActiveEnemies()<=12,"enemy cap");console.assert(WEAPONS.some(w=>w.effect==="freeze"),"freezer exists");console.assert(POWERUPS.some(p=>p.type==="nofap"),"nofap exists");}
+  tests(); bindEvents(); resetGame(); draw();
+  window.addEventListener("pointerdown",()=>{ if(game.screen==="menu"&&soundOn&&!musicTimer)startMusic("menu"); },{once:false});
+})();
+</script>
+</body>
+</html>
