@@ -7,7 +7,6 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
-// Serve index.html from the main folder
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
@@ -44,6 +43,23 @@ wss.on("connection", ws => {
           players
         });
       }
+
+      if (msg.type === "world" && msg.id && msg.world) {
+        broadcast({
+          type: "world",
+          id: msg.id,
+          world: msg.world
+        });
+      }
+
+      if (msg.type === "action" && msg.id && msg.action) {
+        broadcast({
+          type: "action",
+          id: msg.id,
+          action: msg.action
+        });
+      }
+
     } catch (e) {}
   });
 
