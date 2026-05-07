@@ -287,6 +287,8 @@
   let soundOn = true, last = 0, raf = 0;
   let musicTimer = null, musicMode = "none", musicStep = 0;
   let audioCtx = null;
+  let soundtrackAudio = null;
+  const GAME_SOUNDTRACK_SRC = "soundtrack.mp3";
   let canvasRect = null;
   let rectTimer = 0;
   let ws = null;
@@ -310,8 +312,9 @@
   function getAudio(){ if(!soundOn)return null; const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null; if(!audioCtx) audioCtx=new AC(); if(audioCtx.state==="suspended") audioCtx.resume(); return audioCtx; }
   function playNote(freq, duration=.12, type="triangle", gain=.018){ const ac=getAudio(); if(!ac)return; const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime; o.type=type; o.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(Math.max(.0001,gain),t); g.gain.exponentialRampToValueAtTime(.0001,t+duration); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+duration+.02); o.onended=()=>{ try{o.disconnect();g.disconnect();}catch(e){} }; }
   function tone(type){ if(!soundOn)return; const s={start:[330,660,.16,"triangle",.035],attack:[220,90,.1,"square",.035],hit:[120,60,.08,"sawtooth",.045],level:[420,840,.22,"triangle",.04],cart:[80,45,.18,"square",.03],death:[180,50,.35,"sawtooth",.05],pickup:[600,900,.16,"triangle",.04],win:[520,1040,.35,"triangle",.05]}[type]||[200,100,.1,"square",.03]; playNote(s[0],s[2],s[3],s[4]); }
-  function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } musicMode="none"; musicStep=0; }
-  function startMusic(mode){ if(!soundOn)return; if(musicMode===mode&&musicTimer)return; stopMusic(); musicMode=mode; musicStep=0; const menu=[147,196,220,247,294,247,220,196,165,220,247,262,330,262,247,220]; const funky=[196,247,294,330,294,247,220,247,196,262,330,392,330,294,247,220]; const victory=[262,330,392,523,494,392,330,262,294,370,440,587,523,440,370,294]; musicTimer=setInterval(()=>{ if(!soundOn){stopMusic();return;} const seq=mode==="victory"?victory:mode==="menu"?menu:funky; const note=seq[musicStep%seq.length]; if(mode==="victory"){ playNote(note,.42,"sine",.018); if(musicStep%2===0)playNote(note/2,.55,"triangle",.01); } else if(mode==="menu"){ playNote(note,.18,"square",.012); if(musicStep%4===0)playNote(note/2,.22,"triangle",.01); } else { playNote(note,.12,musicStep%4===0?"square":"triangle",.014); if(musicStep%4===0)playNote(82,.08,"sawtooth",.018); if(musicStep%8===4)playNote(123,.08,"square",.012); } musicStep++; }, mode==="victory"?360:mode==="menu"?210:145); }
+  function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } if(soundtrackAudio){ soundtrackAudio.pause(); } musicMode="none"; musicStep=0; }
+  function playGameSoundtrack(){ if(!soundOn) return false; if(!soundtrackAudio){ soundtrackAudio = new Audio(GAME_SOUNDTRACK_SRC); soundtrackAudio.loop = true; soundtrackAudio.volume = .42; soundtrackAudio.addEventListener("error",()=>{ soundtrackAudio = null; }); } if(!soundtrackAudio) return false; soundtrackAudio.play().catch(()=>{}); return true; }
+  function startMusic(mode){ if(!soundOn)return; if(mode==="game" && playGameSoundtrack()){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } musicMode="soundtrack"; return; } if(musicMode===mode&&musicTimer)return; stopMusic(); musicMode=mode; musicStep=0; const menu=[147,196,220,247,294,247,220,196,165,220,247,262,330,262,247,220]; const funky=[196,247,294,330,294,247,220,247,196,262,330,392,330,294,247,220]; const victory=[262,330,392,523,494,392,330,262,294,370,440,587,523,440,370,294]; musicTimer=setInterval(()=>{ if(!soundOn){stopMusic();return;} const seq=mode==="victory"?victory:mode==="menu"?menu:funky; const note=seq[musicStep%seq.length]; if(mode==="victory"){ playNote(note,.42,"sine",.018); if(musicStep%2===0)playNote(note/2,.55,"triangle",.01); } else if(mode==="menu"){ playNote(note,.18,"square",.012); if(musicStep%4===0)playNote(note/2,.22,"triangle",.01); } else { playNote(note,.12,musicStep%4===0?"square":"triangle",.014); if(musicStep%4===0)playNote(82,.08,"sawtooth",.018); if(musicStep%8===4)playNote(123,.08,"square",.012); } musicStep++; }, mode==="victory"?360:mode==="menu"?210:145); }
   function updateMultiplayerStatus(text, cls){ const el=document.getElementById("multiplayerStatus"); if(el){ el.textContent=text; el.className=`multiplayer-status ${cls}`; } const big=document.getElementById("multiplayerBigStatus"); if(big){ big.textContent=text.replace("Multiplayer: ",""); big.className=`multiplayer-big-status ${cls}`; } }
   function initMultiplayer(){
     if(location.protocol === "file:"){ updateMultiplayerStatus("Multiplayer: Needs server", "offline"); return; }
@@ -410,11 +413,187 @@
     spawnCart(t); spawnGremlins(t); spawnBossProjectiles(t); updateBossProjectiles(dt,p); game.carts=game.carts.filter(c=>{ c.x+=c.vx*dt; c.spin+=dt*8; c.flash=Math.max(0,c.flash-dt); if(!c.hit&&dist({x:c.x+55,y:c.y+38},p)<62){ c.hit=true; p.hp=clamp(p.hp-25,0,p.maxHp); game.message="You got clipped by a filthy garbage cart."; game.cameraShake=.15; tone("hit"); burst(p.x,p.y,"#a16207",22); } return c.x>-190&&c.x<W+190&&c.hp>0; });
     if(game.attackFx){ game.attackFx.ttl-=dt; if(game.attackFx.ttl<=0)game.attackFx=null; } game.particles=game.particles.filter(pt=>{ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=280*dt; pt.ttl-=dt; return pt.ttl>0; }); game.popups=game.popups.filter(po=>{ po.y-=35*dt; po.ttl-=dt; return po.ttl>0; }); game.cameraShake=Math.max(0,game.cameraShake-dt); if(p.hp<=0){ game.gameOver=true; game.message="ZAIN BATAHAT, YOU ARE DEAD"; tone("death"); } sendWorldUpdate(t); }
   function updateClientOnlyEffects(dt){ if(game.attackFx){ game.attackFx.ttl-=dt; if(game.attackFx.ttl<=0)game.attackFx=null; } game.particles=game.particles.filter(pt=>{ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=280*dt; pt.ttl-=dt; return pt.ttl>0; }); game.popups=game.popups.filter(po=>{ po.y-=35*dt; po.ttl-=dt; return po.ttl>0; }); game.cameraShake=Math.max(0,game.cameraShake-dt); }
-  function draw(){ ctx.save(); ctx.clearRect(0,0,W,H); if(game.cameraShake>0&&!game.gameWon)ctx.translate(rnd(-5,5),rnd(-5,5)); drawBathroom(); game.powerups.forEach(drawPowerup); game.carts.forEach(drawCart); game.bossProjectiles.forEach(drawBossProjectile); game.enemies.sort((a,b)=>a.y-b.y).forEach(drawEnemy); Object.keys(game.remotePlayers).forEach(id=>drawRemotePlayer(game.remotePlayers[id], id)); drawPlayer(false); drawAttackFx(); game.particles.forEach(drawParticle); game.popups.forEach(drawPopup); drawHud(); if(game.gameOver)drawGameOver(); if(game.gameWon)drawVictory(); ctx.restore(); }
+  function draw(){ ctx.save(); ctx.clearRect(0,0,W,H); if(game.cameraShake>0&&!game.gameWon)ctx.translate(rnd(-5,5),rnd(-5,5)); drawBathroom(); game.powerups.forEach(drawPowerup); game.carts.forEach(drawCart); game.bossProjectiles.forEach(drawBossProjectile); game.enemies.sort((a,b)=>a.y-b.y).forEach(drawEnemyHuman); Object.keys(game.remotePlayers).forEach(id=>drawRemotePlayer(game.remotePlayers[id], id)); drawPlayer(false); drawAttackFx(); game.particles.forEach(drawParticle); game.popups.forEach(drawPopup); drawHud(); if(game.gameOver)drawGameOver(); if(game.gameWon)drawVictory(); ctx.restore(); }
   function roundRect(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill)ctx.fill(); if(stroke)ctx.stroke(); }
   function drawBathroom(){ const g=ctx.createLinearGradient(0,0,W,H); if(game.stage===2){ g.addColorStop(0,"#f5e6c8"); g.addColorStop(.45,"#d6b98c"); g.addColorStop(1,"#9f7f55"); } else if(game.stage===3){ g.addColorStop(0,"#3b0764"); g.addColorStop(.52,"#7f1d1d"); g.addColorStop(1,"#111827"); } else { g.addColorStop(0,"#12303d"); g.addColorStop(.55,"#245466"); g.addColorStop(1,"#08111e"); } ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.strokeStyle="rgba(255,255,255,.1)"; ctx.lineWidth=1; for(let x=0;x<W;x+=46){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();} for(let y=0;y<H;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();} for(let i=0;i<16;i++){ctx.fillStyle=game.stage===2?"rgba(255,255,255,.2)":"rgba(103,232,249,.16)";ctx.beginPath();ctx.ellipse(40+(i*73)%830,75+(i*57)%430,34+(i%4)*10,12+(i%3)*6,(i%5)*.3,0,Math.PI*2);ctx.fill();} drawBath(40,38); drawBath(750,72); drawToilet(70,485); drawToilet(800,490); drawToilet(420,455); drawShower(310,20); drawShower(610,20); }
   function drawBath(x,y){ctx.fillStyle="rgba(255,255,255,.78)";roundRect(x,y,128,78,28,true,false);ctx.fillStyle="rgba(207,250,254,.65)";roundRect(x+16,y+18,96,42,20,true,false);ctx.font="24px Arial";ctx.fillText("🛁",x+16,y+30);} function drawToilet(x,y){ctx.font="42px Arial";ctx.fillText("🚽",x,y);} function drawShower(x,y){ctx.fillStyle="#94a3b8";roundRect(x,y,12,42,6,true,false);roundRect(x+5,y+35,54,12,6,true,false);ctx.font="28px Arial";ctx.fillText("🚿",x+20,y+76);ctx.strokeStyle="rgba(165,243,252,.35)";for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(x+28+i*7,y+75);ctx.lineTo(x+25+i*8,y+130);ctx.stroke();}}
-  function drawPlayer(forcePink){ ensureWeapon(); const p=game.player,bob=Math.sin(p.walk)*3,wpn=WEAPONS[forcePink?0:game.weapon]; ctx.save();ctx.translate(p.x,p.y+bob);ctx.scale(.78,.78); if(now()<game.noFapUntil){ctx.strokeStyle="rgba(255,255,255,.75)";ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,4,54+Math.sin(p.walk)*5,0,Math.PI*2);ctx.stroke();} ctx.scale(p.dir,1); ctx.fillStyle="rgba(0,0,0,.28)";ctx.beginPath();ctx.ellipse(0,38,30,9,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fde68a";ctx.beginPath();ctx.arc(0,-34,18,0,Math.PI*2);ctx.fill();if(game.character==="cap"){ctx.fillStyle="#1e293b";roundRect(-20,-52,40,13,7,true,false);ctx.fillStyle="#0f172a";roundRect(2,-47,24,6,3,true,false);}if(game.character==="blackhair"){ctx.fillStyle="#020617";ctx.beginPath();ctx.arc(0,-46,17,Math.PI,Math.PI*2);ctx.fill();}ctx.fillStyle=game.character==="cap"?"#22c55e":game.character==="blackhair"?"#a855f7":"#38bdf8";roundRect(-22,-15,44,52,20,true,false);ctx.fillStyle="#1e3a8a";roundRect(-20,6,40,32,16,true,false);ctx.strokeStyle="#fde68a";ctx.lineWidth=10;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-20,-2);ctx.lineTo(-34,18+Math.sin(p.walk)*7);ctx.moveTo(20,-2);ctx.lineTo(34,18-Math.sin(p.walk)*7);ctx.stroke();ctx.strokeStyle="#1e293b";ctx.beginPath();ctx.moveTo(-10,28);ctx.lineTo(-16,54+Math.sin(p.walk)*6);ctx.moveTo(10,28);ctx.lineTo(16,54-Math.sin(p.walk)*6);ctx.stroke();ctx.strokeStyle=wpn.effect==="poop"?"#854d0e":wpn.effect==="shock"?"#fde047":wpn.effect==="freeze"?"#93c5fd":wpn.effect==="pee"?"#facc15":"#f9a8d4";ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(28,8);ctx.lineTo(42,44);ctx.stroke();ctx.restore(); }
+  function drawPlayer(forcePink){
+    ensureWeapon();
+    const p = game.player;
+    const wpn = WEAPONS[forcePink ? 0 : game.weapon];
+    const walk = p.walk || 0;
+    const bob = Math.sin(walk) * 2.2;
+    const arm = Math.sin(walk) * 10;
+    const leg = Math.sin(walk) * 12;
+    ctx.save();
+    ctx.translate(p.x, p.y + bob);
+    ctx.scale(.72 * (p.dir || 1), .72);
+
+    if(now() < game.noFapUntil){
+      ctx.strokeStyle = "rgba(255,255,255,.75)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 60 + Math.sin(walk) * 5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.beginPath();
+    ctx.ellipse(0, 50, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const skin = "#f7d9a8";
+    const shirt = game.character === "cap" ? "#22c55e" : game.character === "blackhair" ? "#a855f7" : "#38bdf8";
+    const pants = "#1e3a8a";
+    const hair = game.character === "blackhair" ? "#020617" : "#7c2d12";
+
+    ctx.strokeStyle = pants;
+    ctx.lineWidth = 9;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-9, 20);
+    ctx.lineTo(-18, 48 + leg * .35);
+    ctx.moveTo(9, 20);
+    ctx.lineTo(18, 48 - leg * .35);
+    ctx.stroke();
+
+    ctx.fillStyle = shirt;
+    roundRect(-20, -24, 40, 50, 18, true, false);
+    ctx.fillStyle = "rgba(255,255,255,.14)";
+    roundRect(-12, -18, 10, 32, 8, true, false);
+
+    ctx.strokeStyle = skin;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-19, -10);
+    ctx.lineTo(-34, 10 + arm * .35);
+    ctx.moveTo(19, -10);
+    ctx.lineTo(35, 10 - arm * .35);
+    ctx.stroke();
+
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.ellipse(0, -47, 17, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hair;
+    ctx.beginPath();
+    ctx.ellipse(0, -61, 19, 13, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    if(game.character === "cap"){
+      ctx.fillStyle = "#1e293b";
+      roundRect(-21, -66, 42, 12, 7, true, false);
+      roundRect(5, -61, 24, 6, 3, true, false);
+    }
+    ctx.fillStyle = "#111827";
+    ctx.beginPath();
+    ctx.arc(-6, -49, 2, 0, Math.PI * 2);
+    ctx.arc(7, -49, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7f1d1d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(1, -41, 5, 0, Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = wpn.effect === "poop" ? "#854d0e" : wpn.effect === "shock" ? "#fde047" : wpn.effect === "freeze" ? "#93c5fd" : wpn.effect === "pee" ? "#facc15" : "#f9a8d4";
+    ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(31, 2 - arm * .15);
+    ctx.lineTo(45, 32 - arm * .2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawEnemyHuman(e){
+    const scale = e.boss ? (e.stage5Boss ? 1.65 : 1.45) : e.gremlin ? .55 : .84;
+    const walk = e.walk || 0;
+    const bob = Math.sin(walk) * 2;
+    const arm = Math.sin(walk) * 8;
+    const frozen = now() < e.frozenUntil;
+    ctx.save();
+    ctx.translate(e.x, e.y + bob);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "rgba(0,0,0,.28)";
+    ctx.beginPath();
+    ctx.ellipse(0, 47, 25, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const skin = e.kind === "gremlin" ? "#78350f" : e.color === "#171717" || e.color === "#050505" ? "#525252" : "#f5d0a9";
+    const outfit = frozen ? "#60a5fa" : (e.flash > 0 ? "#fecaca" : e.color);
+    const hair = e.hair || "#111827";
+
+    ctx.strokeStyle = e.kind === "army" ? "#14532d" : e.kind === "trayboss" ? "#7c2d12" : outfit;
+    ctx.lineWidth = 9;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-8, 18);
+    ctx.lineTo(-15, 48 + Math.sin(walk) * 4);
+    ctx.moveTo(8, 18);
+    ctx.lineTo(15, 48 - Math.sin(walk) * 4);
+    ctx.stroke();
+
+    ctx.fillStyle = outfit;
+    roundRect(-22, -24, 44, 48, 17, true, false);
+    if(e.kind === "army"){
+      ctx.fillStyle = "#052e16";
+      roundRect(-18, -58, 36, 10, 5, true, false);
+      ctx.fillStyle = "rgba(255,255,255,.12)";
+      roundRect(-14, -16, 9, 30, 6, true, false);
+    }
+
+    ctx.strokeStyle = skin;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-20, -9);
+    ctx.lineTo(-34, 8 + arm * .4);
+    ctx.moveTo(20, -9);
+    ctx.lineTo(34, 8 - arm * .4);
+    ctx.stroke();
+
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.ellipse(0, -44, 16, 19, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hair;
+    ctx.beginPath();
+    ctx.ellipse(0, -57, 19, 13, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    if(e.kind === "beard"){
+      ctx.fillStyle = "#3f2b1f";
+      roundRect(-12, -37, 24, 14, 7, true, false);
+    }
+    ctx.fillStyle = "#020617";
+    ctx.beginPath();
+    ctx.arc(-6, -45, 2.2, 0, Math.PI * 2);
+    ctx.arc(6, -45, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = e.boss ? "#7f1d1d" : "#be123c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -36, 5, 0, Math.PI);
+    ctx.stroke();
+
+    if(e.kind === "trayboss"){
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, -13, 20, Math.PI * .1, Math.PI * .9);
+      ctx.stroke();
+      ctx.fillStyle = "#cbd5e1";
+      ctx.beginPath();
+      ctx.ellipse(35, 4, 30, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#f9a8d4";
+      ctx.beginPath();
+      ctx.ellipse(35, 2, 15, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    if(!e.gremlin) drawHpBar(e.x, e.y - (e.boss ? 100 : 62), e.boss ? 150 : 64, e.hp / e.maxHp);
+    if(e.speech) drawBubble(e.x, e.y - (e.boss ? 135 : 88), e.speech, e.boss ? "#fde047" : "#fff");
+  }
   function drawEnemy(e){ const s=e.boss?1.85:e.gremlin?.58:1; ctx.save();ctx.translate(e.x,e.y+Math.sin(e.walk)*2);ctx.scale(s,s);ctx.fillStyle="rgba(0,0,0,.28)";ctx.beginPath();ctx.ellipse(0,38,26,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=now()<e.frozenUntil?"#60a5fa":(e.flash>0?"#fecaca":e.color);roundRect(-24,-20,48,74,22,true,false);ctx.fillStyle=e.hair;roundRect(-20,-32,40,24,18,true,false);ctx.fillStyle=e.kind==="army"?"#fef3c7":e.kind==="beard"?"#fde68a":e.kind==="gremlin"?"#78350f":e.boss?"#fde68a":e.color==="#171717"?"#525252":"#fef3c7";ctx.beginPath();ctx.arc(0,-18,17,0,Math.PI*2);ctx.fill();ctx.fillStyle="#000";ctx.beginPath();ctx.arc(-7,-20,2.8,0,Math.PI*2);ctx.arc(7,-20,2.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#db2777";roundRect(-7,-10,14,4,4,true,false); if(e.kind==="beard"){ctx.fillStyle="#3f2b1f";roundRect(-12,-6,24,16,8,true,false);} if(e.kind==="army"){ctx.fillStyle="#166534";roundRect(-22,-4,44,38,12,true,false);ctx.fillStyle="#052e16";roundRect(-18,-38,36,10,5,true,false);} if(e.kind==="trayboss"){ctx.strokeStyle="#facc15";ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,-1,20,Math.PI*.12,Math.PI*.88);ctx.stroke();ctx.fillStyle="#cbd5e1";ctx.beginPath();ctx.ellipse(28,18,28,10,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#94a3b8";ctx.lineWidth=2;ctx.stroke();ctx.fillStyle="#f9a8d4";ctx.beginPath();ctx.ellipse(28,16,15,6,0,0,Math.PI*2);ctx.fill();} ctx.strokeStyle=e.color==="#171717"?"#404040":"#fef3c7";ctx.lineWidth=7;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-22,7);ctx.lineTo(-34,16);ctx.moveTo(22,7);ctx.lineTo(34,16);ctx.moveTo(-10,42);ctx.lineTo(-12,62);ctx.moveTo(10,42);ctx.lineTo(12,62);ctx.stroke();ctx.restore(); if(!e.gremlin)drawHpBar(e.x,e.y-(e.boss?104:66),e.boss?150:64,e.hp/e.maxHp); if(e.speech)drawBubble(e.x,e.y-(e.boss?140:95),e.speech,e.boss?"#fde047":"#fff"); }
   function drawHpBar(x,y,w,pct){ctx.fillStyle="rgba(0,0,0,.58)";roundRect(x-w/2,y,w,8,8,true,false);ctx.fillStyle="#f87171";roundRect(x-w/2,y,w*clamp(pct,0,1),8,8,true,false);} function drawBubble(x,y,text,color){ctx.font="bold 13px Arial";const w=ctx.measureText(text).width+22;ctx.fillStyle=color;ctx.strokeStyle="rgba(0,0,0,.25)";ctx.lineWidth=1;roundRect(x-w/2,y,w,26,13,true,true);ctx.fillStyle="#111827";ctx.textAlign="center";ctx.fillText(text,x,y+17);ctx.textAlign="left";}
   function drawPowerup(item){const pulse=1+Math.sin(item.pulse)*.08;ctx.save();ctx.translate(item.x,item.y);ctx.scale(pulse,pulse);ctx.fillStyle=item.color;ctx.globalAlpha=.92;roundRect(-31,-27,62,54,14,true,false);ctx.globalAlpha=1;ctx.font="29px Arial";ctx.textAlign="center";ctx.fillText(item.icon,0,10);ctx.font="bold 11px Arial";ctx.fillStyle=item.type==="nofap"?"#020617":"#fff";ctx.strokeStyle=item.type==="nofap"?"#fff":"#020617";ctx.lineWidth=4;ctx.strokeText(item.name,0,43);ctx.fillText(item.name,0,43);ctx.textAlign="left";ctx.restore();}
