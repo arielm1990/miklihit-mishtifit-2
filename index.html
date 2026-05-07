@@ -42,6 +42,12 @@
     .multiplayer-big-status.connecting { color: #fde68a; border-color: rgba(250,204,21,.45); }
     .multiplayer-big-status.offline { color: #fca5a5; border-color: rgba(248,113,113,.45); }
     .multiplayer-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+    .lobby-list { margin: 18px auto 8px; max-width: 440px; display: grid; gap: 8px; text-align: left; }
+    .lobby-player { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(15,23,42,.72); border: 1px solid rgba(255,255,255,.12); color: #e2e8f0; font-weight: 800; }
+    .lobby-player.ready { border-color: rgba(34,197,94,.45); color: #bbf7d0; }
+    .ready-pill { font-size: 11px; padding: 4px 8px; border-radius: 999px; background: rgba(248,113,113,.16); color: #fecaca; }
+    .lobby-player.ready .ready-pill { background: rgba(34,197,94,.18); color: #86efac; }
+    .lobby-countdown { min-height: 82px; margin-top: 12px; font-size: clamp(42px, 10vw, 84px); font-weight: 900; color: #fef08a; text-shadow: 0 0 22px rgba(250,204,21,.75); }
     .cheats-text { font-size: clamp(44px, 9vw, 86px); font-weight: 900; color: #fef3c7; text-shadow: 0 0 24px rgba(250,204,21,.8); margin: 22px 0; direction: rtl; }
     .subtitle { margin: 16px 0 0; color: #cffafe; font-size: 18px; line-height: 1.5; max-width: 690px; }
     .spooky-subtitle { margin: 14px 0 0; font-size: clamp(22px, 3.5vw, 38px); font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #39ff14; font-family: Impact, "Arial Black", Arial, sans-serif; text-shadow: 0 0 4px #0f0, 0 0 10px rgba(57,255,20,.9), 2px 2px 0 #14532d, 4px 4px 0 #052e16; transform: skewX(-6deg) rotate(-1deg); display: inline-block; animation: spookyFlicker 1.2s infinite alternate ease-in-out; }
@@ -226,10 +232,13 @@
     <div class="multiplayer-box">
       <div class="label">Multiplayer</div>
       <div id="multiplayerBigStatus" class="multiplayer-big-status offline">Offline</div>
-      <p>Click Connect to join the multiplayer room. Other connected players will appear on the same screen.</p>
-      <p>If it says Offline or Needs server, the WebSocket server is not running yet.</p>
+      <p>Click Connect, wait for players, then press Ready. When everyone is ready, the game starts after a 10-second countdown.</p>
+      <p id="lobbyInfo">Waiting for more players...</p>
+      <div id="lobbyPlayers" class="lobby-list"></div>
+      <div id="lobbyCountdown" class="lobby-countdown"></div>
       <div class="multiplayer-actions">
         <button id="connectMultiplayerBtn" class="btn primary">Connect</button>
+        <button id="readyMultiplayerBtn" class="btn">Ready</button>
         <button id="closeMultiplayerBtn" class="btn">Back</button>
       </div>
     </div>
@@ -287,6 +296,8 @@
   let lastWorldSend = 0;
   let remoteWorldAt = 0;
   const playerId = Math.random().toString(36).slice(2, 10);
+  const playerJoinedAt = Date.now();
+  const lobby = { inLobby:false, ready:false, countdownStart:null, started:false };
   const PERF = { maxParticles: 140, maxPopups: 22, maxPowerups: 2, maxCarts: 1, maxEnemies: 12 };
   const game = { screen:"menu", message:"Welcome to the cursed bathroom.", player:null, playerName:"Player", remotePlayers:{}, enemies:[], bossProjectiles:[], particles:[], popups:[], powerups:[], carts:[], cycle:1, stage:1, stageKills:0, target:50, weapon:0, character:"current", unlockedCharacters:true, choosingAfterWin:false, victoryButton:{x:W/2-115,y:H/2+68,w:230,h:62}, lastAttack:0, attackFx:null, damageBoostUntil:0, noFapUntil:0, speedBoostUntil:0, nextEnemyId:1, nextPowerupAt:0, nextCartAt:0, nextGremlinAt:0, nextBossShotAt:0, cameraShake:0, gameOver:false, gameWon:false };
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -328,16 +339,17 @@
     } catch(e) { wsReady = false; }
   }
   function activeRemoteCount(){ return Object.keys(game.remotePlayers || {}).length; }
-  function isHost(){ if(!wsReady) return true; const ids=[playerId,...Object.keys(game.remotePlayers||{})].sort(); return ids[0]===playerId; }
+  function isHost(){ if(!wsReady) return true; const players=[{id:playerId, joinedAt:playerJoinedAt}, ...Object.keys(game.remotePlayers||{}).map(id=>({id, joinedAt:game.remotePlayers[id].joinedAt||Date.now()}))]; players.sort((a,b)=>(a.joinedAt-b.joinedAt)||String(a.id).localeCompare(String(b.id))); return players[0]?.id===playerId; }
   function cloneWorld(){ return { stage:game.stage, cycle:game.cycle, stageKills:game.stageKills, target:game.target, enemies:game.enemies, bossProjectiles:game.bossProjectiles, powerups:game.powerups, carts:game.carts, gameWon:game.gameWon, gameOver:false }; }
   function applyWorld(world){ if(!world)return; game.stage=world.stage||game.stage; game.cycle=world.cycle||game.cycle; game.stageKills=world.stageKills||0; game.target=world.target||stageTarget(game.stage); game.enemies=Array.isArray(world.enemies)?world.enemies:game.enemies; game.bossProjectiles=Array.isArray(world.bossProjectiles)?world.bossProjectiles:game.bossProjectiles; game.powerups=Array.isArray(world.powerups)?world.powerups:game.powerups; game.carts=Array.isArray(world.carts)?world.carts:game.carts; if(world.gameWon) game.gameWon=true; remoteWorldAt=performance.now(); }
   function sendWorldUpdate(t){ if(!wsReady||!ws||!isHost()||t-lastWorldSend<90)return; lastWorldSend=t; ws.send(JSON.stringify({type:"world", id:playerId, world:cloneWorld()})); }
   function sendAttackAction(origin){ if(!wsReady||!ws||isHost())return false; ensureWeapon(); ws.send(JSON.stringify({type:"action", id:playerId, action:{kind:"attack", origin, weapon:game.weapon, level:game.player?.level||1}})); game.attackFx={x:origin.x,y:origin.y,r:WEAPONS[game.weapon].range,ttl:.18,type:WEAPONS[game.weapon].effect,nofap:false}; tone("attack"); return true; }
   function multiplayerEnemyScale(){ return activeRemoteCount() > 0 ? 1.25 : 1; }
   function sendMultiplayerUpdate(t){
-    if(!wsReady || !ws || !game.player || t - lastNetSend < 80) return;
+    if(!wsReady || !ws || t - lastNetSend < 80) return;
     lastNetSend = t;
-    ws.send(JSON.stringify({ type:"update", id:playerId, player:{ name:game.playerName, x:game.player.x, y:game.player.y, hp:game.player.hp, maxHp:game.player.maxHp, level:game.player.level, weapon:game.weapon, character:game.character, dir:game.player.dir, stage:game.stage, cycle:game.cycle, host:isHost() }}));
+    const p = game.player || { x:W/2, y:H/2, hp:100, maxHp:100, level:1, dir:1 };
+    ws.send(JSON.stringify({ type:"update", id:playerId, player:{ name:game.playerName, x:p.x, y:p.y, hp:p.hp, maxHp:p.maxHp, level:p.level, weapon:game.weapon, character:game.character, dir:p.dir, stage:game.stage, cycle:game.cycle, host:isHost(), joinedAt:playerJoinedAt, inLobby:lobby.inLobby, ready:lobby.ready, countdownStart:isHost()?lobby.countdownStart:null, lobbyStarted:lobby.started }}));
   }
   function drawRemotePlayer(remote, id){
     if(!remote || !Number.isFinite(remote.x) || !Number.isFinite(remote.y)) return;
@@ -435,11 +447,12 @@
     document.getElementById("soundBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();toggleSound();});
     function showCheats(){ document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("multiplayerScreen").classList.add("hidden"); document.getElementById("cheatsScreen").classList.remove("hidden"); }
     function closeCheats(){ document.getElementById("cheatsScreen").classList.add("hidden"); if(game.screen==="game") document.getElementById("gameScreen").classList.remove("hidden"); else document.getElementById("menuScreen").classList.remove("hidden"); }
-    function showMultiplayer(){ document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("cheatsScreen").classList.add("hidden"); document.getElementById("multiplayerScreen").classList.remove("hidden"); if(wsReady) updateMultiplayerStatus("Multiplayer: Connected","connected"); else if(wsConnecting) updateMultiplayerStatus("Multiplayer: Connecting","connecting"); else updateMultiplayerStatus(location.protocol==="file:"?"Multiplayer: Needs server":"Multiplayer: Offline","offline"); }
-    function closeMultiplayer(){ document.getElementById("multiplayerScreen").classList.add("hidden"); if(game.screen==="game") document.getElementById("gameScreen").classList.remove("hidden"); else document.getElementById("menuScreen").classList.remove("hidden"); }
+    function showMultiplayer(){ game.playerName=(document.getElementById("playerNameInput")?.value || "Player").trim().slice(0,16) || "Player"; lobby.inLobby=true; document.getElementById("menuScreen").classList.add("hidden"); document.getElementById("gameScreen").classList.add("hidden"); document.getElementById("characterScreen").classList.add("hidden"); document.getElementById("cheatsScreen").classList.add("hidden"); document.getElementById("multiplayerScreen").classList.remove("hidden"); if(wsReady) updateMultiplayerStatus("Multiplayer: Connected","connected"); else if(wsConnecting) updateMultiplayerStatus("Multiplayer: Connecting","connecting"); else updateMultiplayerStatus(location.protocol==="file:"?"Multiplayer: Needs server":"Multiplayer: Offline","offline"); updateLobbyUI(); }
+    function closeMultiplayer(){ if(game.screen!=="game"){ lobby.inLobby=false; lobby.ready=false; lobby.countdownStart=null; } document.getElementById("multiplayerScreen").classList.add("hidden"); if(game.screen==="game") document.getElementById("gameScreen").classList.remove("hidden"); else document.getElementById("menuScreen").classList.remove("hidden"); }
     document.getElementById("multiplayerBtnMenu").addEventListener("pointerdown",e=>{e.preventDefault();showMultiplayer();});
     document.getElementById("multiplayerBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();showMultiplayer();});
-    document.getElementById("connectMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();initMultiplayer();});
+    document.getElementById("connectMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();lobby.inLobby=true;initMultiplayer();sendMultiplayerUpdate(performance.now());updateLobbyUI();});
+    document.getElementById("readyMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();lobby.inLobby=true;lobby.ready=!lobby.ready;if(!lobby.ready)lobby.countdownStart=null;sendMultiplayerUpdate(performance.now());updateLobbyUI();});
     document.getElementById("closeMultiplayerBtn").addEventListener("pointerdown",e=>{e.preventDefault();closeMultiplayer();});
     document.getElementById("cheatsBtnMenu").addEventListener("pointerdown",e=>{e.preventDefault();showCheats();});
     document.getElementById("cheatsBtnGame").addEventListener("pointerdown",e=>{e.preventDefault();showCheats();});
@@ -453,8 +466,17 @@
     window.addEventListener("resize",()=>{canvasRect=null;});
     window.addEventListener("blur",()=>{keys.up=keys.down=keys.left=keys.right=false;});
   }
-  function loop(t){const dt=Math.min(.028,(t-last)/1000||.016);last=t;update(dt,t);draw();raf=requestAnimationFrame(loop);} function tests(){console.assert(stageTarget(1)===50,"stage 1");console.assert(stageTarget(2)===100,"stage 2");console.assert(stageTarget(3)===1,"stage 3");console.assert(stageTarget(4)===120,"stage 4");console.assert(stageTarget(5)===1,"stage 5");console.assert(WEAPONS.length===5,"5 weapons");console.assert(maxActiveEnemies()<=12,"enemy cap");console.assert(WEAPONS.some(w=>w.effect==="freeze"),"freezer exists");console.assert(POWERUPS.some(p=>p.type==="nofap"),"nofap exists");}
-  tests(); bindEvents(); resetGame(); draw();
+  function loop(t){const dt=Math.min(.028,(t-last)/1000||.016);last=t;update(dt,t);draw();raf=requestAnimationFrame(loop);}
+  function lobbyPlayers(){ const list=[{id:playerId, name:game.playerName||"Player", ready:lobby.ready, inLobby:lobby.inLobby, host:isHost(), countdownStart:lobby.countdownStart, joinedAt:playerJoinedAt}]; Object.keys(game.remotePlayers||{}).forEach(id=>{const p=game.remotePlayers[id]; if(p&&p.inLobby)list.push({id,name:p.name||`P-${id.slice(0,3)}`,ready:!!p.ready,inLobby:!!p.inLobby,host:!!p.host,countdownStart:p.countdownStart||null,joinedAt:p.joinedAt||Date.now(),lobbyStarted:!!p.lobbyStarted});}); return list.sort((a,b)=>(a.joinedAt-b.joinedAt)||String(a.id).localeCompare(String(b.id))); }
+  function allLobbyReady(){ const list=lobbyPlayers(); return list.length>=2 && list.every(p=>p.ready); }
+  function startLobbyGame(){ if(lobby.started)return; lobby.started=true; lobby.inLobby=false; lobby.ready=false; sendMultiplayerUpdate(performance.now()); document.getElementById("multiplayerScreen").classList.add("hidden"); resetGame(false); enterGame(); }
+  function updateLobbyController(){ if(!lobby.inLobby&&!document.getElementById("multiplayerScreen")?.classList.contains("hidden")===false)return; if(wsReady)sendMultiplayerUpdate(performance.now()); const hostRemote=Object.values(game.remotePlayers||{}).find(p=>p.host&&p.countdownStart); if(!isHost()&&hostRemote?.lobbyStarted&&!lobby.started){ startLobbyGame(); return; } if(!isHost()&&hostRemote?.countdownStart){ lobby.countdownStart=hostRemote.countdownStart; }
+    if(isHost()){ if(allLobbyReady()){ if(!lobby.countdownStart) lobby.countdownStart=Date.now(); if(Date.now()-lobby.countdownStart>=10000) startLobbyGame(); } else { lobby.countdownStart=null; lobby.started=false; } }
+    updateLobbyUI(); }
+  function updateLobbyUI(){ const listEl=document.getElementById("lobbyPlayers"), info=document.getElementById("lobbyInfo"), cd=document.getElementById("lobbyCountdown"), readyBtn=document.getElementById("readyMultiplayerBtn"); if(!listEl||!info||!cd||!readyBtn)return; const list=lobbyPlayers(); listEl.innerHTML=list.map(p=>`<div class="lobby-player ${p.ready?"ready":""}"><span>${p.name}${p.host?" 👑":""}</span><span class="ready-pill">${p.ready?"READY":"WAITING"}</span></div>`).join(""); readyBtn.textContent=lobby.ready?"Unready":"Ready"; if(!wsReady){info.textContent="Connect first."; cd.textContent=""; return;} if(list.length<2){info.textContent="Waiting for more players..."; cd.textContent=""; return;} if(!allLobbyReady()){info.textContent="Waiting until all players click Ready."; cd.textContent=""; return;} const start=lobby.countdownStart||(Object.values(game.remotePlayers||{}).find(p=>p.host&&p.countdownStart)?.countdownStart); if(start){ const left=Math.max(0,10-Math.floor((Date.now()-start)/1000)); info.textContent="All players ready. Game starts in:"; cd.textContent=String(left); } else {info.textContent="All players ready. Countdown starting..."; cd.textContent="10";} }
+  setInterval(updateLobbyController, 250);
+   function tests(){console.assert(stageTarget(1)===50,"stage 1");console.assert(stageTarget(2)===100,"stage 2");console.assert(stageTarget(3)===1,"stage 3");console.assert(stageTarget(4)===120,"stage 4");console.assert(stageTarget(5)===1,"stage 5");console.assert(WEAPONS.length===5,"5 weapons");console.assert(maxActiveEnemies()<=12,"enemy cap");console.assert(WEAPONS.some(w=>w.effect==="freeze"),"freezer exists");console.assert(POWERUPS.some(p=>p.type==="nofap"),"nofap exists");}
+  tests(); bindEvents(); resetGame(); draw(); updateLobbyUI();
   window.addEventListener("pointerdown",()=>{ if(game.screen==="menu"&&soundOn&&!musicTimer)startMusic("menu"); },{once:false});
 })();
 </script>
